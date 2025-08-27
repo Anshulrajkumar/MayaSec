@@ -85,6 +85,112 @@ def security_report():
     else:
         return jsonify({'error': 'Security monitoring not available'})
 
+@app.route('/security-logs')
+def security_logs():
+    """View detailed security audit logs"""
+    if not session.get('logged_in'):
+        return redirect(url_for('index'))
+    
+    if not SECURITY_ENABLED:
+        return "Security monitoring disabled"
+    
+    conn = security_monitor.get_db_connection()
+    if not conn:
+        return "Database connection failed"
+    
+    try:
+        cursor = conn.cursor()
+        
+        # Get recent login attempts with details
+        cursor.execute('''
+            SELECT ip_address, username, user_agent, timestamp, threat_level, attempt_result
+            FROM login_attempts 
+            ORDER BY timestamp DESC 
+            LIMIT 100
+        ''')
+        attempts = cursor.fetchall()
+        
+        # Get security actions
+        cursor.execute('''
+            SELECT ip_address, action_type, reason, timestamp 
+            FROM security_actions 
+            ORDER BY timestamp DESC 
+            LIMIT 50
+        ''')
+        actions = cursor.fetchall()
+        
+        # Get honeypot interactions
+        cursor.execute('''
+            SELECT ip_address, username, timestamp
+            FROM honeypot_interactions 
+            ORDER BY timestamp DESC 
+            LIMIT 30
+        ''')
+        honeypot_data = cursor.fetchall()
+        
+        cursor.close()
+        conn.close()
+        
+        return render_template('security_logs.html', 
+                             attempts=attempts, 
+                             actions=actions, 
+                             honeypot_data=honeypot_data)
+    except Exception as e:
+        return f"Error loading logs: {e}"
+
+@app.route('/live-stats')
+def live_stats():
+    """Get real-time security statistics"""
+    if not session.get('logged_in'):
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    if not SECURITY_ENABLED:
+        return jsonify({'error': 'Security monitoring disabled'})
+    
+    conn = security_monitor.get_db_connection()
+    if not conn:
+        return jsonify({'error': 'Database connection failed'})
+    
+    try:
+        cursor = conn.cursor()
+        
+        # Get stats from last 24 hours
+        cursor.execute('''
+            SELECT 
+                COUNT(*) as total_attempts,
+                COUNT(CASE WHEN threat_level > 7 THEN 1 END) as high_threats,
+                COUNT(DISTINCT ip_address) as unique_ips,
+                AVG(threat_level) as avg_threat_level
+            FROM login_attempts 
+            WHERE timestamp > NOW() - INTERVAL '24 hours'
+        ''')
+        stats = cursor.fetchone()
+        
+        # Get top attacking IPs
+        cursor.execute('''
+            SELECT ip_address, COUNT(*) as attempts
+            FROM login_attempts 
+            WHERE timestamp > NOW() - INTERVAL '24 hours'
+            GROUP BY ip_address
+            ORDER BY attempts DESC 
+            LIMIT 5
+        ''')
+        top_ips = cursor.fetchall()
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'total_attempts_24h': stats[0] or 0,
+            'high_threats_24h': stats[1] or 0,
+            'unique_ips_24h': stats[2] or 0,
+            'avg_threat_level': round(float(stats[3]) if stats[3] else 0, 2),
+            'top_attacking_ips': [{'ip': ip[0], 'attempts': ip[1]} for ip in top_ips],
+            'timestamp': datetime.now().isoformat()
+        })
+    except Exception as e:
+        return jsonify({'error': f'Error loading stats: {e}'})
+
 # Test endpoint
 @app.route('/test')
 def test():

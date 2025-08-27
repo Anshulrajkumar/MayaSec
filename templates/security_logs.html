@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Security Audit Logs</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #7f53ac; color: white; }
+        tr:nth-child(even) { background-color: #f2f2f2; }
+        tr:hover { background-color: #ddd; }
+        .high-threat { background-color: #ffcccc; }
+        .medium-threat { background-color: #ffffcc; }
+        .sql-injection { background-color: #ff9999; font-weight: bold; }
+        .nav { margin-bottom: 20px; }
+        .nav a { margin-right: 15px; padding: 8px 16px; background: #7f53ac; color: white; text-decoration: none; border-radius: 4px; }
+        .nav a:hover { background: #5a3a7a; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🛡️ Security Audit Dashboard</h1>
+        <div class="nav">
+            <a href="/dashboard">← Back to Dashboard</a>
+            <a href="/live-attacks">Live Attacks</a>
+            <a href="/ip-stats">IP Statistics</a>
+            <a href="/security-report">JSON Report</a>
+        </div>
+        
+        <h2>📊 Recent Login Attempts</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>IP Address</th>
+                    <th>Username</th>
+                    <th>User Agent</th>
+                    <th>Threat Level</th>
+                    <th>Result</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for attempt in attempts %}
+                <tr class="{% if attempt[4] > 7 %}high-threat{% elif attempt[4] > 4 %}medium-threat{% endif %}">
+                    <td>{{ attempt[3] }}</td>
+                    <td>{{ attempt[0] }}</td>
+                    <td>{{ attempt[1] }}</td>
+                    <td>{{ attempt[2][:50] }}...</td>
+                    <td>{{ attempt[4] }}/10</td>
+                    <td>{{ attempt[5] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <h2>🚨 Security Actions Taken</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>IP Address</th>
+                    <th>Action Type</th>
+                    <th>Reason</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for action in actions %}
+                <tr class="{% if action[1] == 'SQL_INJECTION_DETECTED' %}sql-injection{% endif %}">
+                    <td>{{ action[3] }}</td>
+                    <td>{{ action[0] }}</td>
+                    <td>{{ action[1] }}</td>
+                    <td>{{ action[2] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>
