@@ -5,19 +5,32 @@
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; }
         .dashboard { max-width: 1200px; margin: 0 auto; }
-        .report-btn { padding: 10px 20px; background: #007bff; color: white; text-decoration: none; }
-        .report-section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; }
+        .report-btn { padding: 10px 20px; background: #7f53ac; color: white; text-decoration: none; margin: 10px; display: inline-block; border-radius: 4px; }
+        .report-btn:hover { background: #5a3a7a; }
+        .report-section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
     </style>
 </head>
 <body>
     <div class="dashboard">
-        <h1>Security Dashboard</h1>
-        <a href="/security-report" class="report-btn">View Security Report</a>
+        <h1>🛡️ Security Dashboard</h1>
+        <div>
+            <a href="/security-logs" class="report-btn">📊 View Security Logs</a>
+            <a href="/security-report" class="report-btn">📋 JSON Report</a>
+            <a href="/test" class="report-btn">🧪 System Test</a>
+            <a href="/logout" class="report-btn">🚪 Logout</a>
+        </div>
         <div class="report-section">
             <h3>System Status</h3>
             <p>✅ Security monitoring active</p>
-            <p>✅ AI threat detection enabled</p>
+            <p>✅ In-memory threat detection enabled</p>
             <p>✅ Honeypot system operational</p>
+            <p>✅ SQL injection detection active</p>
+        </div>
+        <div class="report-section">
+            <h3>Quick Stats</h3>
+            <p>🔍 Monitor all login attempts in real-time</p>
+            <p>🚨 Automatic threat detection and response</p>
+            <p>🍯 Honeypot system to trap attackers</p>
         </div>
     </div>
 </body>

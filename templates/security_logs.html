@@ -2,18 +2,18 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Security Audit Logs</title>
+    <title>Security Audit Dashboard</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .container { max-width: 1200px; margin: 0 auto; }
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+        h1 { color: #7f53ac; }
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
         th { background-color: #7f53ac; color: white; }
         tr:nth-child(even) { background-color: #f2f2f2; }
         tr:hover { background-color: #ddd; }
-        .high-threat { background-color: #ffcccc; }
-        .medium-threat { background-color: #ffffcc; }
         .sql-injection { background-color: #ff9999; font-weight: bold; }
+        .honeypot { background-color: #ffcc99; }
         .nav { margin-bottom: 20px; }
         .nav a { margin-right: 15px; padding: 8px 16px; background: #7f53ac; color: white; text-decoration: none; border-radius: 4px; }
         .nav a:hover { background: #5a3a7a; }
@@ -24,12 +24,12 @@
         <h1>🛡️ Security Audit Dashboard</h1>
         <div class="nav">
             <a href="/dashboard">← Back to Dashboard</a>
-            <a href="/live-attacks">Live Attacks</a>
-            <a href="/ip-stats">IP Statistics</a>
             <a href="/security-report">JSON Report</a>
+            <a href="/test">System Test</a>
         </div>
         
-        <h2>📊 Recent Login Attempts</h2>
+        <h2>📊 Recent Security Events ({{ events|length }} total)</h2>
+        {% if events %}
         <table>
             <thead>
                 <tr>
@@ -37,45 +37,26 @@
                     <th>IP Address</th>
                     <th>Username</th>
                     <th>User Agent</th>
-                    <th>Threat Level</th>
-                    <th>Result</th>
+                    <th>Event Type</th>
+                    <th>Details</th>
                 </tr>
             </thead>
             <tbody>
-                {% for attempt in attempts %}
-                <tr class="{% if attempt[4] > 7 %}high-threat{% elif attempt[4] > 4 %}medium-threat{% endif %}">
-                    <td>{{ attempt[3] }}</td>
-                    <td>{{ attempt[0] }}</td>
-                    <td>{{ attempt[1] }}</td>
-                    <td>{{ attempt[2][:50] }}...</td>
-                    <td>{{ attempt[4] }}/10</td>
-                    <td>{{ attempt[5] }}</td>
+                {% for event in events|reverse %}
+                <tr class="{% if event.event_type == 'SQL_INJECTION_DETECTED' %}sql-injection{% elif event.event_type == 'HONEYPOT_INTERACTION' %}honeypot{% endif %}">
+                    <td>{{ event.timestamp }}</td>
+                    <td>{{ event.ip_address }}</td>
+                    <td>{{ event.username }}</td>
+                    <td>{{ event.user_agent }}</td>
+                    <td>{{ event.event_type }}</td>
+                    <td>{{ event.details }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
-        
-        <h2>🚨 Security Actions Taken</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Timestamp</th>
-                    <th>IP Address</th>
-                    <th>Action Type</th>
-                    <th>Reason</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for action in actions %}
-                <tr class="{% if action[1] == 'SQL_INJECTION_DETECTED' %}sql-injection{% endif %}">
-                    <td>{{ action[3] }}</td>
-                    <td>{{ action[0] }}</td>
-                    <td>{{ action[1] }}</td>
-                    <td>{{ action[2] }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        {% else %}
+        <p>No security events recorded yet. Try some failed login attempts to see the monitoring in action!</p>
+        {% endif %}
     </div>
 </body>
 </html>
