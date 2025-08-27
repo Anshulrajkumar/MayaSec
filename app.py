@@ -56,3 +56,14 @@ def login():
 # For Vercel deployment
 if __name__ == '__main__':
     app.run(debug=False)
+
+# Add this at the very end of app.py
+if __name__ == '__main__':
+    app.run(debug=False)
+
+# For Vercel - THIS IS IMPORTANT
+from app import app as application
+
+if __name__ != '__main__':
+    # This makes your app work on Vercel
+    pass
