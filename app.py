@@ -81,5 +81,5 @@ if __name__ == '__main__':
         import threading
         threading.Thread(target=security_monitor.start_monitoring, daemon=True).start()
         print("🛡️  Security monitoring started")
-    app.run(debug=False, host='0.0.0.0', port=5000)
+    app.run(debug=False, host='0.0.0.0', port=8000)
     print("🔒 Security system running on http://localhost:5000")

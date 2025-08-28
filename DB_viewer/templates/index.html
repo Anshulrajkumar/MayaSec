@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Log Viewer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1> Security Log Viewer</h1>
+            <div class="stats-bar">
+                <div class="stat-item">
+                    <span class="stat-label">Recent Activity (24h)</span>
+                    <span class="stat-value" id="recent-activity">-</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Total Entries</span>
+                    <span class="stat-value" id="total-entries">-</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="controls">
+            <div class="search-section">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="search-input" placeholder="Search by username, IP, or user agent...">
+                </div>
+            </div>
+            
+            <div class="filter-section">
+                <select id="threat-filter">
+                    <option value="">All Threat Levels</option>
+                    <option value="HIGH">High</option>
+                    <option value="MEDIUM">Medium</option>
+                    <option value="LOW">Low</option>
+                </select>
+                
+                <select id="result-filter">
+                    <option value="">All Results</option>
+                    <option value="FAILED">Failed</option>
+                    <option value="SUCCESS">Success</option>
+                </select>
+                
+                <button id="refresh-btn" class="btn-refresh">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>IP Address</th>
+                        <th>Username</th>
+                        <th>Password Hash</th>
+                        <th>User Agent</th>
+                        <th>Timestamp</th>
+                        <th>Result</th>
+                        <th>AI Threat Level</th>
+                    </tr>
+                </thead>
+                <tbody id="data-tbody">
+                    <!-- Data will be loaded here -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="pagination">
+            <button id="prev-btn" class="btn-page" disabled>
+                <i class="fas fa-chevron-left"></i> Previous
+            </button>
+            <span id="page-info">Page 1 of 1</span>
+            <button id="next-btn" class="btn-page" disabled>
+                Next <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+
+        <div class="loading" id="loading">
+            <i class="fas fa-spinner fa-spin"></i> Loading...
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

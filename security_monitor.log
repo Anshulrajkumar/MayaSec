@@ -1,1 +1,14 @@
 2025-08-28 19:04:22,158 - INFO - Starting security monitoring background process
+2025-08-28 23:45:14,543 - INFO - Starting security monitoring background process
+2025-08-28 23:50:55,292 - WARNING - Honeypot interaction from 127.0.0.1: admin
+2025-08-28 23:51:31,243 - WARNING - Honeypot interaction from 127.0.0.1: admin
+2025-08-28 23:54:53,163 - INFO - Security action: HONEYPOT_REDIRECT for 127.0.0.1 - 6 failed attempts
+2025-08-28 23:54:59,714 - INFO - Security action: HONEYPOT_REDIRECT for 127.0.0.1 - 7 failed attempts
+2025-08-28 23:55:25,694 - INFO - Security action: HONEYPOT_REDIRECT for 127.0.0.1 - 8 failed attempts
+2025-08-28 23:55:37,063 - WARNING - Honeypot interaction from 127.0.0.1: admin
+2025-08-28 23:58:20,161 - INFO - Security action: HONEYPOT_REDIRECT for 127.0.0.1 - 9 failed attempts
+2025-08-28 23:58:31,269 - WARNING - Honeypot interaction from 127.0.0.1: admin
+2025-08-28 23:59:40,381 - INFO - Security action: HONEYPOT_REDIRECT for 127.0.0.1 - 10 failed attempts
+2025-08-28 23:59:50,191 - WARNING - Honeypot interaction from 127.0.0.1: admin
+2025-08-29 01:05:12,079 - INFO - Starting security monitoring background process
+2025-08-29 01:31:37,871 - INFO - Starting security monitoring background process
