@@ -2,28 +2,111 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>System Login</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Login</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 50px; background: #f0f0f0; }
-        .container { max-width: 400px; margin: 0 auto; background: white; padding: 30px; border: 1px solid #ccc; }
-        input { width: 100%; padding: 8px; margin: 8px 0; }
-        button { width: 100%; padding: 10px; background: #333; color: white; }
-        .error { color: red; margin: 10px 0; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .login-container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 400px;
+        }
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .login-header h1 {
+            color: #333;
+            margin: 0;
+            font-size: 28px;
+        }
+        .shield-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+            box-sizing: border-box;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .login-btn {
+            width: 100%;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+        .login-btn:hover {
+            transform: translateY(-2px);
+        }
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #ffcdd2;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h3>System Access Required</h3>
+    <div class="login-container">
+        <div class="login-header">
+            <div class="shield-icon">🔐</div>
+            <h1>System Access</h1>
+        </div>
+        
         {% if error %}
-            <div class="error">{{ error }}</div>
+        <div class="error">{{ error }}</div>
         {% endif %}
+        
         <form method="POST" action="/honeypot-submit">
-            <input type="text" name="username" placeholder="Username" required>
-            <input type="password" name="password" placeholder="Password" required>
-            <button type="submit">Access System</button>
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            
+            <button type="submit" class="login-btn">Access System</button>
         </form>
-        <p><small>Please contact administrator if access denied.</small></p>
     </div>
 </body>
 </html>
