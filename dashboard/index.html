@@ -440,8 +440,22 @@ async function apiFetch(url, options = {}) {
 }
 
 function setAuthBusy(isBusy) {
-    document.getElementById('login-btn').disabled = isBusy;
-    document.getElementById('signup-btn').disabled = isBusy;
+    const submitBtn = document.getElementById('auth-submit-btn');
+    const loginTab = document.getElementById('mode-login-btn');
+    const signupTab = document.getElementById('mode-signup-btn');
+    
+    if (submitBtn) submitBtn.disabled = isBusy;
+    if (loginTab) loginTab.disabled = isBusy;
+    if (signupTab) signupTab.disabled = isBusy;
+    
+    if (submitBtn) {
+        if (isBusy) {
+            submitBtn.dataset.originalText = submitBtn.textContent;
+            submitBtn.textContent = 'Please wait...';
+        } else {
+            submitBtn.textContent = submitBtn.dataset.originalText || (authMode === 'login' ? 'Sign In' : 'Create Account');
+        }
+    }
 }
 
 function escapeHtml(value) {
