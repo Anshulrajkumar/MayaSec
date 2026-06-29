@@ -1,0 +1,27 @@
+{
+  "name": "mayasec",
+  "version": "0.1.0",
+  "description": "Standalone JavaScript SDK scaffold for browser-side security monitoring.",
+  "type": "module",
+  "main": "sdk/index.js",
+  "scripts": {
+    "dev": "node --watch backend/server.js",
+    "start": "node backend/server.js"
+  },
+  "keywords": [
+    "security",
+    "browser",
+    "sdk",
+    "monitoring"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.2.1"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
+

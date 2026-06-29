@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MayaSec Command Center</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0b0f19;
+            --surface: #111827;
+            --border: #1f2937;
+            --text: #e5e7eb;
+            --text-dim: #9ca3af;
+            --accent: #3b82f6;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+        }
+        header {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.875rem;
+            color: var(--success);
+            background: rgba(16, 185, 129, 0.1);
+            padding: 6px 16px;
+            border-radius: 999px;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--success);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--success);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        .container {
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .kpi-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+        .kpi-card h3 {
+            margin: 0 0 0.5rem 0;
+            font-size: 0.875rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .kpi-card .value {
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: var(--accent);
+            margin: 0;
+        }
+        .table-container {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+        th, td {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+        th {
+            background: rgba(255,255,255,0.02);
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        tbody tr {
+            transition: background 0.2s;
+        }
+        tbody tr:hover {
+            background: rgba(255,255,255,0.03);
+        }
+        .badge {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .badge.session_start { background: rgba(59,130,246,0.1); color: #60a5fa; border: 1px solid rgba(59,130,246,0.2); }
+        .badge.behavior_batch { background: rgba(245,158,11,0.1); color: #fbbf24; border: 1px solid rgba(245,158,11,0.2); }
+        .badge.login_attempt { background: rgba(16,185,129,0.1); color: #10b981; border: 1px solid rgba(16,185,129,0.2); }
+        .badge.SECURITY_ALERT { background: rgba(239,68,68,0.2); color: #ef4444; border: 1px solid #ef4444; box-shadow: 0 0 10px rgba(239,68,68,0.5); animation: pulse-red 1s infinite; }
+        
+        @keyframes pulse-red { 0% { box-shadow: 0 0 5px #ef4444; } 50% { box-shadow: 0 0 20px #ef4444; } 100% { box-shadow: 0 0 5px #ef4444; } }
+        
+        .code-block {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: #a78bfa;
+            background: rgba(0,0,0,0.3);
+            padding: 0.75rem;
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.05);
+            max-height: 120px;
+            overflow-y: auto;
+            margin: 0;
+            white-space: pre-wrap;
+        }
+        
+        .new-row {
+            animation: highlight 2.5s ease-out;
+        }
+        
+        @keyframes highlight {
+            0% { background: rgba(59, 130, 246, 0.25); }
+            100% { background: transparent; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🛡️ MayaSec Command Center</h1>
+        <div class="status">
+            <div class="status-dot"></div>
+            System Online - Awaiting Telemetry
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <h3>Total Events Ingested</h3>
+                <p class="value" id="kpi-events">0</p>
+            </div>
+            <div class="kpi-card">
+                <h3>Active Sessions</h3>
+                <p class="value" id="kpi-sessions">0</p>
+            </div>
+            <div class="kpi-card">
+                <h3>Last Event Received</h3>
+                <p class="value" id="kpi-time" style="font-size: 1.5rem; margin-top: 10px; color: var(--text);">Waiting...</p>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 15%">Timestamp</th>
+                        <th style="width: 15%">Event Type</th>
+                        <th style="width: 20%">Session ID</th>
+                        <th style="width: 50%">Payload Details</th>
+                    </tr>
+                </thead>
+                <tbody id="events-body">
+                    <!-- Events will be injected here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const eventsBody = document.getElementById('events-body');
+        const kpiEvents = document.getElementById('kpi-events');
+        const kpiSessions = document.getElementById('kpi-sessions');
+        const kpiTime = document.getElementById('kpi-time');
+        
+        let totalEvents = 0;
+        const uniqueSessions = new Set();
+
+        function addRow(payload, animate = false) {
+            const tr = document.createElement('tr');
+            if (animate) tr.className = 'new-row';
+            
+            const time = new Date(payload.timestamp).toLocaleTimeString();
+            
+            let details = '';
+            if (payload.type === 'session_start') {
+                details = `Browser: ${payload.data.browser.name} | OS: ${payload.data.device.platform} | Res: ${payload.data.device.screenWidth}x${payload.data.device.screenHeight}`;
+            } else if (payload.type === 'behavior_batch') {
+                details = `${payload.events.length} user actions recorded (Clicks/Moves).`;
+            } else {
+                details = JSON.stringify(payload);
+            }
+
+            const rawJson = JSON.stringify(payload.data || payload.events, null, 2);
+
+            tr.innerHTML = `
+                <td style="color: var(--text-dim);">${time}</td>
+                <td><span class="badge ${payload.type}">${payload.type.replace('_', ' ')}</span></td>
+                <td style="font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; color: var(--text-dim);">${payload.sessionId}</td>
+                <td>
+                    <div style="margin-bottom: 8px; font-weight: 600; color: #fff;">${details}</div>
+                    <pre class="code-block">${rawJson}</pre>
+                </td>
+            `;
+            
+            eventsBody.insertBefore(tr, eventsBody.firstChild);
+            
+            if (eventsBody.children.length > 50) {
+                eventsBody.removeChild(eventsBody.lastChild);
+            }
+
+            totalEvents++;
+            uniqueSessions.add(payload.sessionId);
+            
+            kpiEvents.textContent = totalEvents;
+            kpiSessions.textContent = uniqueSessions.size;
+            kpiTime.textContent = time;
+        }
+
+        // Connect to SSE Stream
+        const evtSource = new EventSource('/api/events/stream');
+        
+        evtSource.onmessage = function(event) {
+            const msg = JSON.parse(event.data);
+            
+            if (msg.type === 'history') {
+                const reversed = [...msg.data].reverse();
+                reversed.forEach(p => addRow(p, false));
+            } else if (msg.type === 'new_event') {
+                addRow(msg.data, true);
+            }
+        };
+
+        evtSource.onerror = function() {
+            document.querySelector('.status').innerHTML = '<div class="status-dot" style="background: var(--danger); box-shadow: 0 0 8px var(--danger);"></div> Disconnected - Retrying...';
+            document.querySelector('.status').style.color = 'var(--danger)';
+            document.querySelector('.status').style.background = 'rgba(239, 68, 68, 0.1)';
+            document.querySelector('.status').style.borderColor = 'rgba(239, 68, 68, 0.2)';
+        };
+        
+        evtSource.onopen = function() {
+            document.querySelector('.status').innerHTML = '<div class="status-dot"></div> System Online - Receiving Telemetry';
+            document.querySelector('.status').style.color = 'var(--success)';
+            document.querySelector('.status').style.background = 'rgba(16, 185, 129, 0.1)';
+            document.querySelector('.status').style.borderColor = 'rgba(16, 185, 129, 0.2)';
+        }
+    </script>
+</body>
+</html>
