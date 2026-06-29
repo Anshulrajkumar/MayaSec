@@ -41,6 +41,11 @@
         .auth-btn.secondary:hover { border-color:var(--accent); color:var(--accent); }
         .auth-error { color:var(--danger); font-size:0.8rem; margin-bottom:12px; display:none; }
         .auth-success { color:var(--success); font-size:0.8rem; margin-bottom:12px; display:none; }
+        .google-btn { display:flex; align-items:center; justify-content:center; gap:10px; width:100%; padding:13px; background:#fff; color:#333; border:none; border-radius:10px; font-size:0.95rem; font-weight:600; cursor:pointer; transition:all 0.2s; font-family:'Inter',sans-serif; }
+        .google-btn:hover { background:#f0f0f0; transform:translateY(-1px); box-shadow:0 4px 12px rgba(255,255,255,0.1); }
+        .google-btn img { width:20px; height:20px; }
+        .auth-divider { display:flex; align-items:center; gap:12px; margin:16px 0; color:var(--text-dim); font-size:0.8rem; }
+        .auth-divider::before,.auth-divider::after { content:''; flex:1; height:1px; background:var(--border); }
         .auth-footnote { color:var(--text-dim); font-size:0.78rem; margin-top:0.5rem; }
 
         /* ONBOARDING PAGE */
@@ -154,6 +159,11 @@
         <input class="auth-input" id="auth-password" type="password" placeholder="Password">
         <input class="auth-input hidden" id="auth-password-confirm" type="password" placeholder="Confirm password">
         <button class="auth-btn" id="auth-submit-btn" onclick="submitAuth()">Sign In</button>
+        <div class="auth-divider"><span>or</span></div>
+        <button class="google-btn" onclick="loginWithGoogle()">
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="G">
+            Continue with Google
+        </button>
         <p class="auth-footnote" id="auth-footnote">Use the account linked to your monitored websites.</p>
     </div>
 </div>
@@ -326,6 +336,10 @@ async function submitAuth() {
     } else {
         await handleSignup();
     }
+}
+
+function loginWithGoogle() {
+    window.location.href = '/api/auth/google';
 }
 
 async function handleLogin() {
