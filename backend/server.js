@@ -42,7 +42,18 @@ const sdkCors = cors({
 
 app.use(express.json());
 app.use('/sdk', sdkCors, express.static(path.join(__dirname, '../sdk')));
-app.options('/api/ingest', ingestCors);
+
+// Manually handle preflight for /api/ingest to guarantee correct headers
+app.options('/api/ingest', (req, res) => {
+  res.set({
+    'Access-Control-Allow-Origin': req.headers.origin || '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Max-Age': '86400'
+  });
+  res.status(204).end();
+});
+
 app.use('/', express.static(path.join(__dirname, '../dashboard')));
 
 validateRuntimeConfig();
@@ -593,7 +604,14 @@ app.get('/api/sites', requireAuth, async (req, res) => {
   }
 });
 
-app.post('/api/ingest', ingestCors, async (req, res) => {
+app.post('/api/ingest', async (req, res) => {
+  // Set CORS headers manually for cross-origin SDK requests
+  res.set({
+    'Access-Control-Allow-Origin': req.headers.origin || '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type'
+  });
+
   const payload = req.body;
   if (!payload || typeof payload !== 'object') {
     return res.status(400).json({ error: 'Invalid event payload' });
