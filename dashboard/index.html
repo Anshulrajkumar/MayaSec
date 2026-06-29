@@ -365,8 +365,8 @@ async function handleSignup() {
         });
 
         if (!data.hasSession) {
-            showAuthSuccess(data.message || 'Account created. Check your email to confirm it, then sign in.');
-            setAuthMode('login'); // Switch back to login
+            setAuthMode('login'); // Switch back to login FIRST
+            showAuthSuccess(data.message || 'Account created! Check your email to confirm, then sign in.');
             return;
         }
 
