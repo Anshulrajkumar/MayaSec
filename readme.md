@@ -32,14 +32,14 @@ Paste this snippet inside the `<head>` tag of every HTML page you want to protec
 <script type="module" src="https://mayasec.onrender.com/sdk/index.js"></script>
 <script type="module">
     import { MayaSec } from 'https://mayasec.onrender.com/sdk/index.js';
-    MayaSec.init();
+    MayaSec.init({ apiKey: 'YOUR_MAYASEC_API_KEY' });
     MayaSec.start();
 </script>
 ```
 
-### Step 2: That's It. You're Done. 
+### Step 2: Create Your Dashboard Account
 
-There is no Step 2. No npm installs. No API keys. No backend changes.
+Sign in to the MayaSec dashboard, generate your API key, and add the domains you want to monitor.
 
 The SDK will silently begin:
 - Fingerprinting every visitor's device
@@ -53,7 +53,7 @@ Open the **MayaSec Command Center** to see your website's security data in real-
 
 **[https://mayasec.onrender.com](https://mayasec.onrender.com)**
 
-Your website will automatically appear in the sidebar. Click on it to filter events specific to your site.
+Any allowed website using your API key will appear in the sidebar. Click on it to filter events specific to your site.
 
 ---
 
@@ -131,7 +131,7 @@ MayaSec/
 If you want to run your own instance of MayaSec instead of using the hosted version:
 
 ### Prerequisites
-- Node.js 18+ installed
+- Node.js 20+ installed
 - npm installed
 
 ### Installation
@@ -162,8 +162,11 @@ The server will start on `http://localhost:5000`.
 4. Set:
    - **Build Command:** `npm install`
    - **Start Command:** `node backend/server.js`
+   - **Environment Variables:** `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `APP_ORIGIN`
 5. Choose the **Free** instance type.
 6. Deploy! Your live URL will be your new MayaSec endpoint.
+
+Run the SQL in [docs/supabase.sql](docs/supabase.sql) against your Supabase project before deploying.
 
 Then update the script tag on your websites to point to your Render URL:
 
@@ -171,7 +174,7 @@ Then update the script tag on your websites to point to your Render URL:
 <script type="module" src="https://YOUR-APP.onrender.com/sdk/index.js"></script>
 <script type="module">
     import { MayaSec } from 'https://YOUR-APP.onrender.com/sdk/index.js';
-    MayaSec.init();
+    MayaSec.init({ apiKey: 'YOUR_MAYASEC_API_KEY' });
     MayaSec.start();
 </script>
 ```

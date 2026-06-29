@@ -260,26 +260,20 @@
 
 <script>
 // ===== STATE =====
-const SESSION_KEY = 'mayasec_session';
-let currentUser, currentSession, userApiKey, userDomains = [];
+let currentUser, userApiKey, userDomains = [];
 let allEvents = [], currentFilter = 'all', alertCount = 0;
 const uniqueSessions = new Set(), siteSessionMap = {}, siteAlertMap = {}, knownSites = new Map();
 
 // ===== INIT =====
 async function initApp() {
-    currentSession = getStoredSession();
-    if (!currentSession?.access_token) {
-        showView('login');
-        return;
-    }
-
     try {
         const data = await apiFetch('/api/auth/me');
         currentUser = data.user;
         await registerUser();
     } catch (error) {
-        clearStoredSession();
-        showAuthError(error.message);
+        if (!/Authentication required|Missing refresh token|Origin not allowed|Invalid login credentials/i.test(error.message)) {
+            showAuthError(error.message);
+        }
         showView('login');
     }
 }
@@ -295,7 +289,6 @@ async function handleLogin() {
             method: 'POST',
             body: JSON.stringify({ email, password })
         });
-        saveSession(data.session, data.user);
         currentUser = data.user;
         await registerUser();
     } catch (error) {
@@ -318,12 +311,11 @@ async function handleSignup() {
             body: JSON.stringify({ email, password })
         });
 
-        if (!data.session) {
+        if (!data.hasSession) {
             showAuthSuccess(data.message || 'Account created. Check your email to confirm it, then sign in.');
             return;
         }
 
-        saveSession(data.session, data.user);
         currentUser = data.user;
         await registerUser();
     } catch (error) {
@@ -346,16 +338,13 @@ function showAuthSuccess(msg) {
 
 async function logout() {
     try {
-        if (currentSession?.access_token) {
-            await apiFetch('/api/auth/logout', { method: 'POST' });
-        }
+        await apiFetch('/api/auth/logout', { method: 'POST' });
     } catch {
-        // The local session still needs to be cleared if the remote logout fails.
+        // The UI should still return to logged-out state if remote logout fails.
     }
-    clearStoredSession();
     currentUser = null;
-    currentSession = null;
     userApiKey = null;
+    userDomains = [];
     resetRealtimeState();
     showView('login');
 }
@@ -373,31 +362,16 @@ async function registerUser() {
     }
 }
 
-function getStoredSession() {
-    try {
-        return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
-    } catch {
-        return null;
-    }
-}
-
-function saveSession(session, user) {
-    if (!session?.access_token) throw new Error('No auth session returned');
-    currentSession = { ...session, user };
-    localStorage.setItem(SESSION_KEY, JSON.stringify(currentSession));
-}
-
-function clearStoredSession() {
-    localStorage.removeItem(SESSION_KEY);
-}
-
 async function apiFetch(url, options = {}) {
     const headers = {
         ...(options.body ? { 'Content-Type': 'application/json' } : {}),
-        ...(currentSession?.access_token ? { Authorization: `Bearer ${currentSession.access_token}` } : {}),
         ...(options.headers || {})
     };
-    const response = await fetch(url, { ...options, headers });
+    const response = await fetch(url, {
+        ...options,
+        headers,
+        credentials: 'same-origin'
+    });
     const text = await response.text();
     let data = {};
     try {

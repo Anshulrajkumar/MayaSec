@@ -1,8 +1,7 @@
 import 'dotenv/config';
 import cors from 'cors';
-import express from 'express';
 import crypto from 'crypto';
-import fs from 'fs';
+import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -13,35 +12,55 @@ const app = express();
 const port = process.env.PORT || 5000;
 const supabaseUrl = process.env.SUPABASE_URL?.replace(/\/+$/, '');
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
-const dataDir = path.join(__dirname, '../data');
-const usersFile = path.join(dataDir, 'users.json');
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const appOrigin = process.env.APP_ORIGIN?.replace(/\/+$/, '') || '';
+const isProduction = process.env.NODE_ENV === 'production';
+const cookieSecure = process.env.COOKIE_SECURE !== 'false' && (isProduction || Boolean(appOrigin.startsWith('https://')));
+const authCookieBase = {
+  httpOnly: true,
+  sameSite: 'Lax',
+  secure: cookieSecure,
+  path: '/'
+};
 
-// Flexible CORS for deployment
-app.use(cors({
-  origin: process.env.ALLOWED_ORIGIN || true,
-  credentials: true
-}));
-app.use(express.json());
-
-// ===== IN-MEMORY STORES =====
 let clients = [];
 const recentEvents = [];
 const connectedSites = new Map();
 
-// User store: userId -> { email, apiKey, allowedDomains: [] }
-const users = new Map();
-// API key lookup: apiKey -> userId
-const apiKeyIndex = new Map();
+const ingestCors = cors({
+  origin: true,
+  credentials: false,
+  methods: ['POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type']
+});
 
-loadUserStore();
+const sdkCors = cors({
+  origin: true,
+  credentials: false,
+  methods: ['GET', 'HEAD', 'OPTIONS']
+});
 
-// ===== STATIC FILES =====
-app.use('/sdk', express.static(path.join(__dirname, '../sdk')));
+app.use(express.json());
+app.use('/sdk', sdkCors, express.static(path.join(__dirname, '../sdk')));
+app.options('/api/ingest', ingestCors);
 app.use('/', express.static(path.join(__dirname, '../dashboard')));
 
-// ===== AUTH HELPERS =====
+validateRuntimeConfig();
+
 function authErrorMessage(data, fallback = 'Authentication request failed') {
   return data?.msg || data?.message || data?.error_description || data?.error || data?.error_code || fallback;
+}
+
+function validateRuntimeConfig() {
+  const missing = [];
+  if (!supabaseUrl) missing.push('SUPABASE_URL');
+  if (!supabaseAnonKey) missing.push('SUPABASE_ANON_KEY');
+  if (!supabaseServiceRoleKey) missing.push('SUPABASE_SERVICE_ROLE_KEY');
+  if (isProduction && !appOrigin) missing.push('APP_ORIGIN');
+
+  if (missing.length > 0) {
+    throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+  }
 }
 
 function publicUser(user) {
@@ -65,6 +84,62 @@ function publicSession(data) {
   };
 }
 
+function parseCookies(req) {
+  const header = req.headers.cookie;
+  if (!header) return {};
+
+  return Object.fromEntries(
+    header.split(';').map(part => {
+      const index = part.indexOf('=');
+      const key = part.slice(0, index).trim();
+      const value = part.slice(index + 1).trim();
+      return [key, decodeURIComponent(value)];
+    })
+  );
+}
+
+function setAuthCookies(res, session) {
+  if (!session?.access_token || !session?.refresh_token) return;
+
+  const maxAgeMs = Math.max(Number(session.expires_in || 3600) * 1000, 60_000);
+  res.cookie('mayasec_at', session.access_token, {
+    ...authCookieBase,
+    maxAge: maxAgeMs
+  });
+  res.cookie('mayasec_rt', session.refresh_token, {
+    ...authCookieBase,
+    maxAge: 1000 * 60 * 60 * 24 * 30
+  });
+}
+
+function clearAuthCookies(res) {
+  res.clearCookie('mayasec_at', { ...authCookieBase, maxAge: undefined });
+  res.clearCookie('mayasec_rt', { ...authCookieBase, maxAge: undefined });
+}
+
+function readAccessToken(req) {
+  const headerToken = req.headers.authorization?.replace(/^Bearer\s+/i, '');
+  if (headerToken) return headerToken;
+  const cookies = parseCookies(req);
+  return cookies.mayasec_at || '';
+}
+
+function readRefreshToken(req) {
+  const cookies = parseCookies(req);
+  return cookies.mayasec_rt || '';
+}
+
+async function parseResponse(response) {
+  const text = await response.text();
+  if (!text) return {};
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { raw: text };
+  }
+}
+
 async function callSupabaseAuth(pathname, { method = 'GET', body, accessToken } = {}) {
   if (!supabaseUrl || !supabaseAnonKey) {
     return {
@@ -84,9 +159,7 @@ async function callSupabaseAuth(pathname, { method = 'GET', body, accessToken } 
       },
       body: body ? JSON.stringify(body) : undefined
     });
-    const text = await response.text();
-    const data = text ? JSON.parse(text) : {};
-    return { ok: response.ok, status: response.status, data };
+    return { ok: response.ok, status: response.status, data: await parseResponse(response) };
   } catch (error) {
     return {
       ok: false,
@@ -96,17 +169,131 @@ async function callSupabaseAuth(pathname, { method = 'GET', body, accessToken } 
   }
 }
 
-async function requireAuth(req, res, next) {
-  const token = req.headers.authorization?.replace(/^Bearer\s+/i, '');
-  if (!token) return res.status(401).json({ error: 'Missing auth token' });
-
-  const result = await callSupabaseAuth('/user', { accessToken: token });
-  if (!result.ok) {
-    return res.status(401).json({ error: authErrorMessage(result.data, 'Invalid auth token') });
+async function callSupabaseRest(pathname, { method = 'GET', body, prefer, headers = {} } = {}) {
+  if (!supabaseUrl || !supabaseServiceRoleKey) {
+    return {
+      ok: false,
+      status: 500,
+      data: { error: 'Supabase database is not configured. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.' }
+    };
   }
 
-  req.authUser = publicUser(result.data);
-  req.authToken = token;
+  try {
+    const response = await fetch(`${supabaseUrl}/rest/v1/${pathname}`, {
+      method,
+      headers: {
+        apikey: supabaseServiceRoleKey,
+        authorization: `Bearer ${supabaseServiceRoleKey}`,
+        'content-type': 'application/json',
+        ...(prefer ? { Prefer: prefer } : {}),
+        ...headers
+      },
+      body: body ? JSON.stringify(body) : undefined
+    });
+    return { ok: response.ok, status: response.status, data: await parseResponse(response) };
+  } catch (error) {
+    return {
+      ok: false,
+      status: 502,
+      data: { error: `Unable to reach Supabase database: ${error.message}` }
+    };
+  }
+}
+
+function encodeFilterValue(value) {
+  return encodeURIComponent(String(value));
+}
+
+async function getStoredUserById(userId) {
+  const result = await callSupabaseRest(`mayasec_users?user_id=eq.${encodeFilterValue(userId)}&select=user_id,email,api_key,allowed_domains`);
+  if (!result.ok) throw new Error(authErrorMessage(result.data, 'Failed to load MayaSec user'));
+
+  const record = Array.isArray(result.data) ? result.data[0] : null;
+  if (!record) return null;
+
+  return {
+    userId: record.user_id,
+    email: record.email,
+    apiKey: record.api_key,
+    allowedDomains: Array.isArray(record.allowed_domains) ? record.allowed_domains : []
+  };
+}
+
+async function getStoredUserByApiKey(apiKey) {
+  const result = await callSupabaseRest(`mayasec_users?api_key=eq.${encodeFilterValue(apiKey)}&select=user_id,email,api_key,allowed_domains`);
+  if (!result.ok) throw new Error(authErrorMessage(result.data, 'Failed to load MayaSec API key'));
+
+  const record = Array.isArray(result.data) ? result.data[0] : null;
+  if (!record) return null;
+
+  return {
+    userId: record.user_id,
+    email: record.email,
+    apiKey: record.api_key,
+    allowedDomains: Array.isArray(record.allowed_domains) ? record.allowed_domains : []
+  };
+}
+
+async function saveStoredUser({ userId, email, apiKey, allowedDomains }) {
+  const result = await callSupabaseRest('mayasec_users?on_conflict=user_id', {
+    method: 'POST',
+    prefer: 'resolution=merge-duplicates,return=representation',
+    body: [{
+      user_id: userId,
+      email,
+      api_key: apiKey,
+      allowed_domains: allowedDomains
+    }]
+  });
+
+  if (!result.ok) throw new Error(authErrorMessage(result.data, 'Failed to save MayaSec user'));
+
+  const record = Array.isArray(result.data) ? result.data[0] : null;
+  return {
+    userId: record?.user_id || userId,
+    email: record?.email || email,
+    apiKey: record?.api_key || apiKey,
+    allowedDomains: Array.isArray(record?.allowed_domains) ? record.allowed_domains : allowedDomains
+  };
+}
+
+async function refreshSession(refreshToken) {
+  if (!refreshToken) {
+    return { ok: false, status: 401, data: { error: 'Missing refresh token' } };
+  }
+
+  return callSupabaseAuth('/token?grant_type=refresh_token', {
+    method: 'POST',
+    body: { refresh_token: refreshToken }
+  });
+}
+
+async function requireAuth(req, res, next) {
+  let accessToken = readAccessToken(req);
+  let authResult = accessToken ? await callSupabaseAuth('/user', { accessToken }) : null;
+
+  if (!authResult?.ok) {
+    const refreshToken = readRefreshToken(req);
+    const refreshResult = await refreshSession(refreshToken);
+
+    if (!refreshResult.ok) {
+      clearAuthCookies(res);
+      return res.status(401).json({ error: authErrorMessage(refreshResult.data, 'Authentication required') });
+    }
+
+    const refreshedSession = publicSession(refreshResult.data);
+    setAuthCookies(res, refreshedSession);
+    accessToken = refreshedSession.access_token;
+    authResult = await callSupabaseAuth('/user', { accessToken });
+  }
+
+  if (!authResult?.ok) {
+    clearAuthCookies(res);
+    return res.status(401).json({ error: authErrorMessage(authResult?.data, 'Authentication required') });
+  }
+
+  req.authUser = publicUser(authResult.data);
+  req.authToken = accessToken;
   next();
 }
 
@@ -142,41 +329,22 @@ function isAllowedDomain(hostname, allowedDomain) {
   return hostname === allowedDomain || hostname.endsWith(`.${allowedDomain}`);
 }
 
-function loadUserStore() {
-  try {
-    if (!fs.existsSync(usersFile)) return;
-
-    const savedUsers = JSON.parse(fs.readFileSync(usersFile, 'utf8'));
-    Object.entries(savedUsers).forEach(([userId, user]) => {
-      if (!user?.email || !user?.apiKey) return;
-
-      const userData = {
-        email: user.email,
-        apiKey: user.apiKey,
-        allowedDomains: Array.isArray(user.allowedDomains) ? user.allowedDomains : []
-      };
-      users.set(userId, userData);
-      apiKeyIndex.set(userData.apiKey, userId);
-    });
-    console.log(`Loaded ${users.size} registered user(s) from local store`);
-  } catch (error) {
-    console.error('Failed to load local user store:', error.message);
-  }
+function authOriginAllowed(origin) {
+  if (!origin) return true;
+  if (!appOrigin) return origin === `http://localhost:${port}` || origin === 'http://localhost:5000';
+  return origin === appOrigin;
 }
 
-function saveUserStore() {
-  try {
-    fs.mkdirSync(dataDir, { recursive: true });
-    const serialized = Object.fromEntries(users.entries());
-    const tmpFile = `${usersFile}.tmp`;
-    fs.writeFileSync(tmpFile, JSON.stringify(serialized, null, 2));
-    fs.renameSync(tmpFile, usersFile);
-  } catch (error) {
-    console.error('Failed to save local user store:', error.message);
+function requireAppOrigin(req, res, next) {
+  const origin = req.headers.origin || '';
+  if (!authOriginAllowed(origin)) {
+    return res.status(403).json({ error: 'Origin not allowed' });
   }
+  next();
 }
 
-// ===== AUTH API =====
+app.use('/api/auth', requireAppOrigin);
+
 app.post('/api/auth/signup', async (req, res) => {
   const { email, password } = req.body || {};
   if (!email || !password) return res.status(400).json({ error: 'Missing email or password' });
@@ -190,9 +358,11 @@ app.post('/api/auth/signup', async (req, res) => {
   if (!result.ok) return res.status(result.status).json({ error: authErrorMessage(result.data) });
 
   const session = publicSession(result.data);
+  if (session) setAuthCookies(res, session);
+
   res.json({
     user: publicUser(result.data.user),
-    session,
+    hasSession: Boolean(session),
     message: session ? 'Account created.' : 'Account created. Check your email to confirm it, then sign in.'
   });
 });
@@ -208,9 +378,12 @@ app.post('/api/auth/login', async (req, res) => {
 
   if (!result.ok) return res.status(result.status).json({ error: authErrorMessage(result.data, 'Unable to sign in') });
 
+  const session = publicSession(result.data);
+  setAuthCookies(res, session);
+
   res.json({
     user: publicUser(result.data.user),
-    session: publicSession(result.data)
+    hasSession: true
   });
 });
 
@@ -219,79 +392,95 @@ app.get('/api/auth/me', requireAuth, (req, res) => {
 });
 
 app.post('/api/auth/logout', requireAuth, async (req, res) => {
+  clearAuthCookies(res);
   await callSupabaseAuth('/logout', { method: 'POST', accessToken: req.authToken });
   res.json({ success: true });
 });
 
-// ===== USER REGISTRATION =====
-// Called after dashboard auth to create or return the user's MayaSec API key.
-app.post('/api/auth/register', requireAuth, (req, res) => {
+app.post('/api/auth/register', requireAuth, async (req, res) => {
   const userId = req.authUser.id;
   const email = req.authUser.email;
   if (!userId || !email) return res.status(400).json({ error: 'Missing userId or email' });
 
-  if (users.has(userId)) {
-    const user = users.get(userId);
-    return res.json({ apiKey: user.apiKey, allowedDomains: user.allowedDomains });
+  try {
+    const existingUser = await getStoredUserById(userId);
+    if (existingUser) {
+      return res.json({ apiKey: existingUser.apiKey, allowedDomains: existingUser.allowedDomains });
+    }
+
+    const savedUser = await saveStoredUser({
+      userId,
+      email,
+      apiKey: 'ms_ak_' + crypto.randomBytes(8).toString('hex'),
+      allowedDomains: []
+    });
+
+    res.json({ apiKey: savedUser.apiKey, allowedDomains: savedUser.allowedDomains });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
-
-  const apiKey = 'ms_ak_' + crypto.randomBytes(8).toString('hex');
-  const userData = { email, apiKey, allowedDomains: [] };
-  users.set(userId, userData);
-  apiKeyIndex.set(apiKey, userId);
-  saveUserStore();
-
-  console.log(`\nNew user registered: ${email} | API Key: ${apiKey}`);
-  res.json({ apiKey, allowedDomains: [] });
 });
 
-// ===== DOMAIN MANAGEMENT =====
-app.post('/api/auth/domains', requireAuth, (req, res) => {
-  const userId = req.authUser.id;
+app.post('/api/auth/domains', requireAuth, async (req, res) => {
   const { domain } = req.body || {};
   if (!domain) return res.status(400).json({ error: 'Missing domain' });
 
-  const user = users.get(userId);
-  if (!user) return res.status(404).json({ error: 'User not found' });
+  try {
+    const storedUser = await getStoredUserById(req.authUser.id);
+    if (!storedUser) return res.status(404).json({ error: 'User not found' });
 
-  const cleanDomain = normalizeDomain(domain);
-  if (!cleanDomain) return res.status(400).json({ error: 'Invalid domain' });
+    const cleanDomain = normalizeDomain(domain);
+    if (!cleanDomain) return res.status(400).json({ error: 'Invalid domain' });
 
-  if (!user.allowedDomains.includes(cleanDomain)) {
-    user.allowedDomains.push(cleanDomain);
-    saveUserStore();
-    console.log(`\nDomain added for ${user.email}: ${cleanDomain}`);
+    const allowedDomains = storedUser.allowedDomains.includes(cleanDomain)
+      ? storedUser.allowedDomains
+      : [...storedUser.allowedDomains, cleanDomain];
+
+    const savedUser = await saveStoredUser({ ...storedUser, allowedDomains });
+    res.json({ allowedDomains: savedUser.allowedDomains });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
-
-  res.json({ allowedDomains: user.allowedDomains });
 });
 
-app.delete('/api/auth/domains', requireAuth, (req, res) => {
-  const userId = req.authUser.id;
+app.delete('/api/auth/domains', requireAuth, async (req, res) => {
   const { domain } = req.body || {};
   if (!domain) return res.status(400).json({ error: 'Missing domain' });
 
-  const user = users.get(userId);
-  if (!user) return res.status(404).json({ error: 'User not found' });
+  try {
+    const storedUser = await getStoredUserById(req.authUser.id);
+    if (!storedUser) return res.status(404).json({ error: 'User not found' });
 
-  const cleanDomain = normalizeDomain(domain);
-  user.allowedDomains = user.allowedDomains.filter(d => d !== cleanDomain);
-  saveUserStore();
-  res.json({ allowedDomains: user.allowedDomains });
+    const cleanDomain = normalizeDomain(domain);
+    const savedUser = await saveStoredUser({
+      ...storedUser,
+      allowedDomains: storedUser.allowedDomains.filter(d => d !== cleanDomain)
+    });
+
+    res.json({ allowedDomains: savedUser.allowedDomains });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
-// ===== SSE ENDPOINT =====
-app.get('/api/events/stream', (req, res) => {
-  const apiKey = req.query.apiKey;
+app.get('/api/events/stream', requireAuth, async (req, res) => {
+  let userRecord;
 
+  try {
+    userRecord = await getStoredUserById(req.authUser.id);
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+
+  if (!userRecord?.apiKey) return res.status(404).json({ error: 'User not registered' });
+
+  const apiKey = userRecord.apiKey;
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
   res.flushHeaders();
 
-  const filtered = apiKey
-    ? recentEvents.filter(e => e._apiKey === apiKey)
-    : recentEvents;
+  const filtered = recentEvents.filter(event => event._apiKey === apiKey);
   res.write(`data: ${JSON.stringify({ type: 'history', data: filtered })}\n\n`);
 
   const client = { res, apiKey };
@@ -302,13 +491,12 @@ app.get('/api/events/stream', (req, res) => {
   });
 });
 
-// ===== BOT DETECTION ENGINE =====
 function analyzeBehavior(payload) {
   if (payload.type !== 'behavior_batch') return null;
 
   const events = Array.isArray(payload.events) ? payload.events : [];
-  const clicks = events.filter(e => e.type === 'click');
-  const moves = events.filter(e => e.type === 'mousemove');
+  const clicks = events.filter(event => event.type === 'click');
+  const moves = events.filter(event => event.type === 'mousemove');
 
   if (clicks.length >= 8) {
     return {
@@ -329,7 +517,6 @@ function analyzeBehavior(payload) {
   return null;
 }
 
-// ===== BROADCAST HELPER =====
 function broadcast(payload) {
   clients.forEach(client => {
     if (client.apiKey && payload._apiKey !== client.apiKey) return;
@@ -338,59 +525,68 @@ function broadcast(payload) {
 }
 
 function broadcastSites(apiKey) {
-  const sitesForKey = Array.from(connectedSites.values()).filter(s => s.apiKey === apiKey);
+  const sitesForKey = Array.from(connectedSites.values()).filter(site => site.apiKey === apiKey);
   clients.forEach(client => {
     if (client.apiKey && client.apiKey !== apiKey) return;
     client.res.write(`data: ${JSON.stringify({ type: 'sites_update', data: sitesForKey })}\n\n`);
   });
 }
 
-// ===== SITES API =====
-app.get('/api/sites', (req, res) => {
-  const apiKey = req.query.apiKey;
-  if (apiKey) {
-    const filtered = Array.from(connectedSites.values()).filter(s => s.apiKey === apiKey);
-    return res.json(filtered);
+app.get('/api/sites', requireAuth, async (req, res) => {
+  try {
+    const userRecord = await getStoredUserById(req.authUser.id);
+    if (!userRecord?.apiKey) return res.status(404).json({ error: 'User not registered' });
+
+    const filtered = Array.from(connectedSites.values()).filter(site => site.apiKey === userRecord.apiKey);
+    res.json(filtered);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
-  res.json(Array.from(connectedSites.values()));
 });
 
-// ===== INGESTION API =====
-app.post('/api/ingest', (req, res) => {
+app.post('/api/ingest', ingestCors, async (req, res) => {
   const payload = req.body;
   if (!payload || typeof payload !== 'object') {
     return res.status(400).json({ error: 'Invalid event payload' });
   }
 
   const apiKey = payload.apiKey;
+  if (!apiKey) return res.status(401).json({ error: 'Missing API key' });
+
   const { origin, siteName, hostname } = siteFromRequest(req);
   payload.origin = siteName;
-  payload._apiKey = apiKey || 'unregistered';
+  payload._apiKey = apiKey;
 
-  if (apiKey && apiKeyIndex.has(apiKey)) {
-    const userId = apiKeyIndex.get(apiKey);
-    const user = users.get(userId);
+  let userRecord;
+  try {
+    userRecord = await getStoredUserByApiKey(apiKey);
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
 
-    if (user.allowedDomains.length > 0) {
-      const isAllowed = user.allowedDomains.some(d => isAllowedDomain(hostname, d));
-      if (!isAllowed) {
-        console.log(`\nBLOCKED: Event from ${siteName} rejected - not in allowed domains for ${user.email}`);
-        return res.status(403).json({ error: 'Domain not authorized for this API key' });
-      }
+  if (!userRecord) {
+    return res.status(403).json({ error: 'Invalid API key' });
+  }
+
+  if (userRecord.allowedDomains.length > 0) {
+    const isAllowed = userRecord.allowedDomains.some(domain => isAllowedDomain(hostname, domain));
+    if (!isAllowed) {
+      return res.status(403).json({ error: 'Domain not authorized for this API key' });
     }
   }
 
-  const siteKey = `${siteName}_${apiKey || 'none'}`;
+  const siteKey = `${siteName}_${apiKey}`;
   if (!connectedSites.has(siteKey)) {
     connectedSites.set(siteKey, {
       name: siteName,
       url: origin,
-      apiKey: apiKey || 'unregistered',
+      apiKey,
       eventCount: 0,
       lastSeen: Date.now(),
       firstSeen: Date.now()
     });
   }
+
   const site = connectedSites.get(siteKey);
   site.eventCount++;
   site.lastSeen = Date.now();
@@ -399,24 +595,22 @@ app.post('/api/ingest', (req, res) => {
   if (recentEvents.length > 200) recentEvents.pop();
 
   broadcast(payload);
-  broadcastSites(apiKey || 'unregistered');
+  broadcastSites(apiKey);
 
   if (payload.type === 'behavior_batch') {
     const threat = analyzeBehavior(payload);
-
     if (threat) {
       const alertPayload = {
         type: 'SECURITY_ALERT',
         sessionId: payload.sessionId,
         origin: siteName,
-        _apiKey: apiKey || 'unregistered',
+        _apiKey: apiKey,
         data: threat,
         timestamp: Date.now()
       };
 
       recentEvents.unshift(alertPayload);
       broadcast(alertPayload);
-      console.log(`\nMAYASEC THREAT ENGINE: Bot Detected on [${siteName}] -> ${threat.details}`);
     }
   }
 
