@@ -1,27 +1,27 @@
-# 🛡️ MayaSec — Browser-Side Security Monitoring SDK
+# MayaSec — Browser-Side Security Monitoring SDK
 
 **MayaSec** is a lightweight, zero-config JavaScript SDK that adds an invisible security layer to any website. It silently monitors user behavior, fingerprints devices, detects bots, and blocks attacks like SQL Injection — all from the browser, without touching your backend code.
 
 Drop one script tag into your HTML. That's it. Your website is now protected and monitored in real-time through the **MayaSec Command Center**.
 
-> 🏆 Built for the **CBI Cybersecurity Hackathon 2026**
+
 
 ---
 
-## 🚀 What Does MayaSec Do?
+## What Does MayaSec Do?
 
 | Feature | Description |
 |---|---|
-| 🔍 **Device Fingerprinting** | Collects browser name, screen resolution, OS platform, timezone, and language to generate a unique Session ID for every visitor. |
-| 🖱️ **Behavioral Telemetry** | Tracks mouse movements (throttled) and click coordinates to build a behavioral profile of each user session. |
-| 🤖 **Bot Detection Engine** | Analyzes click frequency and mouse trajectory patterns in real-time. Flags sessions with non-human behavior (e.g., rapid clicking, zero mouse movement). |
-| 🛡️ **SQL Injection Firewall** | Intercepts login form submissions before they reach your server. If a known SQLi payload is detected (e.g., `' OR 1=1--`), the request is **blocked instantly** and an alert is fired. |
-| 📡 **Real-Time Command Center** | A beautiful dark-mode dashboard that streams all security events live via Server-Sent Events (SSE). Filter events per-website, track active sessions, and monitor threats. |
-| 🌐 **Multi-Site Support** | Monitor multiple websites from a single dashboard. New websites are auto-discovered — no configuration required. |
+| **Device Fingerprinting** | Collects browser name, screen resolution, OS platform, timezone, and language to generate a unique Session ID for every visitor. |
+| **Behavioral Telemetry** | Tracks mouse movements (throttled) and click coordinates to build a behavioral profile of each user session. |
+| **Bot Detection Engine** | Analyzes click frequency and mouse trajectory patterns in real-time. Flags sessions with non-human behavior (e.g., rapid clicking, zero mouse movement). |
+| **SQL Injection Firewall** | Intercepts login form submissions before they reach your server. If a known SQLi payload is detected (e.g., `' OR 1=1--`), the request is **blocked instantly** and an alert is fired. |
+| **Real-Time Command Center** | A beautiful dark-mode dashboard that streams all security events live via Server-Sent Events (SSE). Filter events per-website, track active sessions, and monitor threats. |
+| **Multi-Site Support** | Monitor multiple websites from a single dashboard. New websites are auto-discovered — no configuration required. |
 
 ---
 
-## 📦 How to Add MayaSec to Your Website
+## How to Add MayaSec to Your Website
 
 ### Step 1: Add the Script Tag
 
@@ -37,7 +37,7 @@ Paste this snippet inside the `<head>` tag of every HTML page you want to protec
 </script>
 ```
 
-### Step 2: That's It. You're Done. ✅
+### Step 2: That's It. You're Done. 
 
 There is no Step 2. No npm installs. No API keys. No backend changes.
 
@@ -51,13 +51,13 @@ The SDK will silently begin:
 
 Open the **MayaSec Command Center** to see your website's security data in real-time:
 
-🔗 **[https://mayasec.onrender.com](https://mayasec.onrender.com)**
+**[https://mayasec.onrender.com](https://mayasec.onrender.com)**
 
 Your website will automatically appear in the sidebar. Click on it to filter events specific to your site.
 
 ---
 
-## 🖥️ Command Center Dashboard
+## Command Center Dashboard
 
 The Command Center is a real-time security monitoring dashboard that gives you full visibility into what's happening on your website(s).
 
@@ -78,7 +78,7 @@ The Command Center is a real-time security monitoring dashboard that gives you f
 
 ---
 
-## 🏗️ Project Architecture
+## Project Architecture
 
 ```
 MayaSec/
@@ -126,7 +126,7 @@ MayaSec/
 
 ---
 
-## 🔧 Self-Hosting MayaSec
+## Self-Hosting MayaSec
 
 If you want to run your own instance of MayaSec instead of using the hosted version:
 
@@ -178,7 +178,7 @@ Then update the script tag on your websites to point to your Render URL:
 
 ---
 
-## 🛡️ Detection Rules
+## Detection Rules
 
 MayaSec currently implements the following detection rules:
 
@@ -200,37 +200,13 @@ MayaSec currently implements the following detection rules:
 
 ---
 
-## 🗺️ Future Roadmap
 
-- [ ] **Persistent Database** — Store events in SQLite/PostgreSQL for historical analysis
-- [ ] **MITRE ATT&CK Tagging** — Tag each alert with its corresponding ATT&CK technique ID
-- [ ] **Threat Intel Export** — Output alerts as structured JSON logs for SIEM ingestion (Splunk, ELK)
-- [ ] **Integration with Suricata/Zeek** — Share IP blacklists with network-level IDS tools
-- [ ] **Remote Kill Switch** — Block suspicious sessions directly from the Command Center
-- [ ] **XSS Detection** — Detect and block Cross-Site Scripting payloads
-- [ ] **Keystroke Dynamics** — Analyze typing patterns for advanced bot detection
-- [ ] **Admin Authentication** — Secure the Command Center with login credentials
+## License
 
----
-
-## 🧰 Tech Stack
-
-| Layer | Technology |
-|---|---|
-| SDK (Client) | Vanilla JavaScript (ES Modules) |
-| Backend | Node.js, Express.js |
-| Real-Time | Server-Sent Events (SSE) |
-| Dashboard | HTML, CSS, JavaScript |
-| Deployment | Render.com |
-
----
-
-## 📄 License
-
-This project was built for the **CBI Cybersecurity Hackathon 2026**. 
+This project was built for the **Open Source Contribution to Cyber Security**. 
 
 ---
 
 <p align="center">
-  <b>🛡️ MayaSec — Because security shouldn't require a server rewrite.</b>
+  <b>MayaSec — Because security shouldn't require a server rewrite.</b>
 </p>
