@@ -1,6 +1,6 @@
 import { sendEvent } from './transport.js';
 
-export function startAuthInterception(sessionId) {
+export function startAuthInterception(sessionId, apiKey) {
   // Add listener in the CAPTURE phase (true) so MayaSec intercepts the event
   // BEFORE the bank's own JavaScript gets a chance to see it!
   document.addEventListener('submit', (e) => {
@@ -17,7 +17,7 @@ export function startAuthInterception(sessionId) {
       
       for (let input of inputs) {
         if (sqlInjectionPattern.test(input.value)) {
-          // 🚨 MALICIOUS PAYLOAD DETECTED!
+          // MALICIOUS PAYLOAD DETECTED!
           
           // 1. Block the form from submitting
           e.preventDefault();
@@ -25,12 +25,13 @@ export function startAuthInterception(sessionId) {
           e.stopImmediatePropagation();
           
           // 3. Visual warning for the Hackathon demo
-          alert("🚨 MAYASEC FIREWALL: Malicious SQL Injection blocked! 🚨");
+          alert("MAYASEC FIREWALL: Malicious SQL Injection blocked!");
           
           // 4. Send high-priority alert to the Command Center
           sendEvent({
             type: 'SECURITY_ALERT',
             sessionId: sessionId,
+            apiKey: apiKey,
             data: {
               reason: 'SQL_INJECTION_ATTEMPT',
               maliciousInput: input.value,
@@ -47,6 +48,7 @@ export function startAuthInterception(sessionId) {
       sendEvent({
         type: 'login_attempt',
         sessionId: sessionId,
+        apiKey: apiKey,
         timestamp: Date.now()
       });
     }
