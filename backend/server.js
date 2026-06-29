@@ -387,6 +387,55 @@ app.post('/api/auth/login', async (req, res) => {
   });
 });
 
+app.get('/api/auth/google', (req, res) => {
+  const redirectTo = appOrigin || `http://localhost:${port}`;
+  const url = `${supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectTo + '/api/auth/callback')}`;
+  res.redirect(url);
+});
+
+app.get('/api/auth/callback', async (req, res) => {
+  const { access_token, refresh_token } = req.query;
+  
+  // If tokens come as hash fragments, Supabase redirects with them in the URL
+  // We need a small page to extract them and send them to us
+  if (!access_token) {
+    // Serve a tiny page that reads hash fragments and sends them as query params
+    return res.send(`<!DOCTYPE html><html><body><script>
+      const hash = window.location.hash.substring(1);
+      const params = new URLSearchParams(hash);
+      const at = params.get('access_token');
+      const rt = params.get('refresh_token');
+      if (at) {
+        fetch('/api/auth/token-exchange?access_token=' + at + '&refresh_token=' + (rt||''), { credentials: 'same-origin' })
+          .then(() => window.location.href = '/')
+          .catch(() => window.location.href = '/');
+      } else { window.location.href = '/'; }
+    </script></body></html>`);
+  }
+
+  // Direct query param tokens (some flows)
+  if (access_token) {
+    const maxAge = 3600 * 1000;
+    res.cookie('mayasec_at', access_token, { ...authCookieBase, maxAge });
+    if (refresh_token) {
+      res.cookie('mayasec_rt', refresh_token, { ...authCookieBase, maxAge: 1000 * 60 * 60 * 24 * 30 });
+    }
+  }
+  res.redirect('/');
+});
+
+app.get('/api/auth/token-exchange', (req, res) => {
+  const { access_token, refresh_token } = req.query;
+  if (!access_token) return res.status(400).json({ error: 'Missing token' });
+
+  const maxAge = 3600 * 1000;
+  res.cookie('mayasec_at', access_token, { ...authCookieBase, maxAge });
+  if (refresh_token) {
+    res.cookie('mayasec_rt', refresh_token, { ...authCookieBase, maxAge: 1000 * 60 * 60 * 24 * 30 });
+  }
+  res.json({ success: true });
+});
+
 app.get('/api/auth/me', requireAuth, (req, res) => {
   res.json({ user: req.authUser });
 });
