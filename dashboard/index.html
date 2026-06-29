@@ -28,6 +28,10 @@
         .login-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:3rem; width:420px; text-align:center; }
         .login-card h1 { font-size:1.75rem; margin-bottom:0.5rem; }
         .login-card p { color:var(--text-dim); font-size:0.9rem; margin-bottom:2rem; }
+        .auth-mode-switch { display:grid; grid-template-columns:1fr 1fr; gap:6px; padding:6px; background:rgba(0,0,0,0.24); border:1px solid var(--border); border-radius:12px; margin-bottom:1.5rem; }
+        .auth-mode-btn { border:none; background:transparent; color:var(--text-dim); padding:10px 12px; border-radius:8px; font-size:0.85rem; font-weight:600; cursor:pointer; transition:all 0.2s; }
+        .auth-mode-btn.active { background:var(--accent); color:#fff; box-shadow:0 8px 20px rgba(59,130,246,0.22); }
+        .auth-mode-btn:not(.active):hover { color:var(--text); background:rgba(255,255,255,0.04); }
         .auth-input { width:100%; padding:12px 16px; background:rgba(0,0,0,0.3); border:1px solid var(--border); border-radius:10px; color:var(--text); font-size:0.95rem; outline:none; margin-bottom:12px; font-family:'Inter',sans-serif; }
         .auth-input:focus { border-color:var(--accent); }
         .auth-btn { width:100%; padding:14px; background:var(--accent); color:#fff; border:none; border-radius:10px; font-size:1rem; font-weight:600; cursor:pointer; transition:all 0.2s; margin-bottom:10px; }
@@ -37,6 +41,7 @@
         .auth-btn.secondary:hover { border-color:var(--accent); color:var(--accent); }
         .auth-error { color:var(--danger); font-size:0.8rem; margin-bottom:12px; display:none; }
         .auth-success { color:var(--success); font-size:0.8rem; margin-bottom:12px; display:none; }
+        .auth-footnote { color:var(--text-dim); font-size:0.78rem; margin-top:0.5rem; }
 
         /* ONBOARDING PAGE */
         .onboard-page { display:flex; align-items:center; justify-content:center; height:100vh; }
@@ -138,13 +143,18 @@
 <div id="view-login" class="login-page">
     <div class="login-card">
         <h1>MayaSec</h1>
+        <div class="auth-mode-switch">
+            <button class="auth-mode-btn active" id="mode-login-btn" type="button" onclick="setAuthMode('login')">Sign In</button>
+            <button class="auth-mode-btn" id="mode-signup-btn" type="button" onclick="setAuthMode('signup')">Create Account</button>
+        </div>
         <p id="auth-title">Sign in to access your Security Command Center</p>
         <div id="auth-error" class="auth-error"></div>
         <div id="auth-success" class="auth-success"></div>
         <input class="auth-input" id="auth-email" type="email" placeholder="Email address">
         <input class="auth-input" id="auth-password" type="password" placeholder="Password">
-        <button class="auth-btn" id="login-btn" onclick="handleLogin()">Sign In</button>
-        <button class="auth-btn secondary" id="signup-btn" onclick="handleSignup()">Create Account</button>
+        <input class="auth-input hidden" id="auth-password-confirm" type="password" placeholder="Confirm password">
+        <button class="auth-btn" id="auth-submit-btn" onclick="submitAuth()">Sign In</button>
+        <p class="auth-footnote" id="auth-footnote">Use the account linked to your monitored websites.</p>
     </div>
 </div>
 
@@ -230,7 +240,7 @@
 <div id="settings-modal" class="modal-overlay hidden" onclick="if(event.target===this)closeSettings()">
     <div class="modal">
         <div class="modal-header">
-            <h2>Settings</h2>
+            <h2>Add New Website / Settings</h2>
             <button class="modal-close" onclick="closeSettings()">&times;</button>
         </div>
 
@@ -243,17 +253,19 @@
         </div>
 
         <div class="modal-section">
-            <h3>Integration Snippet</h3>
-            <div class="snippet-box" id="settings-snippet"></div>
+            <h3>Step 1: Whitelist Your Website Domain</h3>
+            <p style="font-size:0.8rem;color:var(--text-dim);margin-bottom:0.5rem;">Enter the domain of the website you want to monitor. Events from other domains will be rejected.</p>
+            <div class="domain-row">
+                <input class="domain-input" id="settings-domain-input" placeholder="e.g. mysite.com">
+                <button class="add-btn" onclick="addDomainFromSettings()">Add Domain</button>
+            </div>
+            <div class="domain-list" id="settings-domain-list"></div>
         </div>
 
         <div class="modal-section">
-            <h3>Allowed Domains</h3>
-            <div class="domain-row">
-                <input class="domain-input" id="settings-domain-input" placeholder="e.g. mysite.com">
-                <button class="add-btn" onclick="addDomainFromSettings()">Add</button>
-            </div>
-            <div class="domain-list" id="settings-domain-list"></div>
+            <h3>Step 2: Paste Integration Snippet</h3>
+            <p style="font-size:0.8rem;color:var(--text-dim);margin-bottom:0.5rem;">Copy and paste this snippet into the <code>&lt;head&gt;</code> tag of your website.</p>
+            <div class="snippet-box" id="settings-snippet"></div>
         </div>
     </div>
 </div>
@@ -275,6 +287,44 @@ async function initApp() {
             showAuthError(error.message);
         }
         showView('login');
+    }
+}
+let authMode = 'login'; // 'login' or 'signup'
+
+function setAuthMode(mode) {
+    if (authMode === mode) return;
+    authMode = mode;
+    
+    document.getElementById('auth-error').style.display = 'none';
+    document.getElementById('auth-success').style.display = 'none';
+    document.getElementById('auth-email').value = '';
+    document.getElementById('auth-password').value = '';
+    document.getElementById('auth-password-confirm').value = '';
+    
+    const confirmInput = document.getElementById('auth-password-confirm');
+    const submitBtn = document.getElementById('auth-submit-btn');
+    const title = document.getElementById('auth-title');
+    
+    // Update Tabs
+    document.getElementById('mode-login-btn').classList.toggle('active', mode === 'login');
+    document.getElementById('mode-signup-btn').classList.toggle('active', mode === 'signup');
+    
+    if (mode === 'signup') {
+        confirmInput.classList.remove('hidden');
+        submitBtn.textContent = 'Create Account';
+        title.textContent = 'Create an account to start monitoring';
+    } else {
+        confirmInput.classList.add('hidden');
+        submitBtn.textContent = 'Sign In';
+        title.textContent = 'Sign in to access your Security Command Center';
+    }
+}
+
+async function submitAuth() {
+    if (authMode === 'login') {
+        await handleLogin();
+    } else {
+        await handleSignup();
     }
 }
 
@@ -301,7 +351,10 @@ async function handleLogin() {
 async function handleSignup() {
     const email = document.getElementById('auth-email').value.trim();
     const password = document.getElementById('auth-password').value;
+    const confirm = document.getElementById('auth-password-confirm').value;
+    
     if (!email || !password) return showAuthError('Please enter email and password');
+    if (password !== confirm) return showAuthError('Passwords do not match');
     if (password.length < 6) return showAuthError('Password must be at least 6 characters');
 
     setAuthBusy(true);
@@ -313,6 +366,7 @@ async function handleSignup() {
 
         if (!data.hasSession) {
             showAuthSuccess(data.message || 'Account created. Check your email to confirm it, then sign in.');
+            setAuthMode('login'); // Switch back to login
             return;
         }
 
