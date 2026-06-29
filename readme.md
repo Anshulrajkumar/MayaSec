@@ -1,4 +1,4 @@
-# MayaSec — Browser-Side Security Monitoring SDK
+# MayaSec - Browser-Side Security Monitoring SDK
 
 **MayaSec** is a lightweight, zero-config JavaScript SDK that adds an invisible security layer to any website. It silently monitors user behavior, fingerprints devices, detects bots, and blocks attacks like SQL Injection — all from the browser, without touching your backend code.
 
