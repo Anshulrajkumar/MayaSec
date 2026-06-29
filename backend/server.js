@@ -71,20 +71,46 @@ function analyzeBehavior(payload) {
   return null;
 }
 
+// Track connected websites
+const connectedSites = new Map(); // origin -> { name, eventCount, lastSeen }
+
+// API to get connected sites
+app.get('/api/sites', (req, res) => {
+  res.json(Array.from(connectedSites.values()));
+});
+
 // Ingestion API
 app.post('/api/ingest', (req, res) => {
   const payload = req.body;
   
-  // 1. Keep last 100 events
+  // Extract origin website from request headers
+  const origin = req.headers.origin || req.headers.referer || 'Unknown';
+  const siteName = origin.replace(/^https?:\/\//, '').replace(/\/$/, '');
+  payload.origin = siteName;
+
+  // Track connected site
+  if (!connectedSites.has(siteName)) {
+    connectedSites.set(siteName, { name: siteName, url: origin, eventCount: 0, lastSeen: Date.now(), firstSeen: Date.now() });
+  }
+  const site = connectedSites.get(siteName);
+  site.eventCount++;
+  site.lastSeen = Date.now();
+
+  // 1. Keep last 200 events
   recentEvents.unshift(payload);
-  if (recentEvents.length > 100) recentEvents.pop();
+  if (recentEvents.length > 200) recentEvents.pop();
 
   // 2. Broadcast normal event
   clients.forEach(client => {
     client.write(`data: ${JSON.stringify({ type: 'new_event', data: payload })}\n\n`);
   });
 
-  // 3. Run Threat Detection Engine
+  // 3. Broadcast updated site list
+  clients.forEach(client => {
+    client.write(`data: ${JSON.stringify({ type: 'sites_update', data: Array.from(connectedSites.values()) })}\n\n`);
+  });
+
+  // 4. Run Threat Detection Engine
   if (payload.type === 'behavior_batch') {
     const threat = analyzeBehavior(payload);
     
@@ -92,6 +118,7 @@ app.post('/api/ingest', (req, res) => {
       const alertPayload = {
         type: 'SECURITY_ALERT',
         sessionId: payload.sessionId,
+        origin: siteName,
         data: threat,
         timestamp: Date.now()
       };
@@ -101,7 +128,7 @@ app.post('/api/ingest', (req, res) => {
       clients.forEach(client => {
         client.write(`data: ${JSON.stringify({ type: 'new_event', data: alertPayload })}\n\n`);
       });
-      console.log(`\n🚨 MAYASEC THREAT ENGINE: Bot Detected -> ${threat.details}`);
+      console.log(`\n🚨 MAYASEC THREAT ENGINE: Bot Detected on [${siteName}] -> ${threat.details}`);
     }
   }
 

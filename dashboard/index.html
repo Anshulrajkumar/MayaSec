@@ -4,47 +4,153 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MayaSec Command Center</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg: #0b0f19;
             --surface: #111827;
+            --surface-hover: #1a2234;
             --border: #1f2937;
             --text: #e5e7eb;
             --text-dim: #9ca3af;
             --accent: #3b82f6;
+            --accent-glow: rgba(59, 130, 246, 0.15);
             --success: #10b981;
             --danger: #ef4444;
             --warning: #f59e0b;
+            --purple: #8b5cf6;
         }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            margin: 0;
-            padding: 0;
             background-color: var(--bg);
             color: var(--text);
             font-family: 'Inter', sans-serif;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ===== SIDEBAR ===== */
+        .sidebar {
+            width: 280px;
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .sidebar-header h1 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .sidebar-header p {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            margin-top: 4px;
+        }
+        .site-list-title {
+            padding: 1rem 1.5rem 0.5rem;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-dim);
+            font-weight: 600;
+        }
+        .site-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.5rem;
+        }
+        .site-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 4px;
+        }
+        .site-item:hover { background: var(--surface-hover); }
+        .site-item.active {
+            background: var(--accent-glow);
+            border: 1px solid rgba(59,130,246,0.3);
+        }
+        .site-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--success);
+            box-shadow: 0 0 6px var(--success);
+            flex-shrink: 0;
+        }
+        .site-info { flex: 1; min-width: 0; }
+        .site-name {
+            font-size: 0.875rem;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .site-meta {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            margin-top: 2px;
+        }
+        .site-count {
+            background: rgba(255,255,255,0.08);
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+        .sidebar-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--border);
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            text-align: center;
+        }
+
+        /* ===== MAIN CONTENT ===== */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
         header {
             background: var(--surface);
             border-bottom: 1px solid var(--border);
-            padding: 1.5rem 2rem;
+            padding: 1.25rem 2rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-shrink: 0;
         }
-        header h1 {
-            margin: 0;
-            font-size: 1.5rem;
+        .header-left h2 {
+            font-size: 1.25rem;
             font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+        }
+        .header-left p {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            margin-top: 2px;
         }
         .status {
             display: flex;
             align-items: center;
             gap: 8px;
-            font-size: 0.875rem;
+            font-size: 0.8rem;
             color: var(--success);
             background: rgba(16, 185, 129, 0.1);
             padding: 6px 16px;
@@ -64,145 +170,209 @@
             50% { opacity: 0.5; transform: scale(1.2); }
             100% { opacity: 1; transform: scale(1); }
         }
-        .container {
+        .content {
+            flex: 1;
+            overflow-y: auto;
             padding: 2rem;
-            max-width: 1400px;
-            margin: 0 auto;
         }
+
+        /* ===== KPI CARDS ===== */
         .kpi-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.25rem;
             margin-bottom: 2rem;
         }
         .kpi-card {
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            padding: 1.25rem;
         }
         .kpi-card h3 {
-            margin: 0 0 0.5rem 0;
-            font-size: 0.875rem;
+            font-size: 0.75rem;
             color: var(--text-dim);
             text-transform: uppercase;
             letter-spacing: 0.05em;
+            font-weight: 600;
         }
         .kpi-card .value {
-            font-size: 2.5rem;
-            font-weight: 600;
-            color: var(--accent);
-            margin: 0;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-top: 8px;
         }
+        .kpi-card .value.blue { color: var(--accent); }
+        .kpi-card .value.green { color: var(--success); }
+        .kpi-card .value.red { color: var(--danger); }
+        .kpi-card .value.purple { color: var(--purple); }
+
+        /* ===== TABLE ===== */
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .table-header h3 { font-size: 1rem; font-weight: 600; }
         .table-container {
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: 12px;
             overflow: hidden;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
         }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: left;
-        }
-        th, td {
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid var(--border);
-        }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th, td { padding: 0.85rem 1.25rem; border-bottom: 1px solid var(--border); }
         th {
             background: rgba(255,255,255,0.02);
             font-weight: 600;
-            font-size: 0.875rem;
+            font-size: 0.75rem;
             color: var(--text-dim);
             text-transform: uppercase;
             letter-spacing: 0.05em;
+            position: sticky;
+            top: 0;
         }
-        tbody tr {
-            transition: background 0.2s;
-        }
-        tbody tr:hover {
-            background: rgba(255,255,255,0.03);
-        }
+        tbody tr { transition: background 0.2s; }
+        tbody tr:hover { background: rgba(255,255,255,0.03); }
+
+        /* ===== BADGES ===== */
         .badge {
-            padding: 4px 8px;
+            padding: 4px 10px;
             border-radius: 6px;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.05em;
+            display: inline-block;
         }
         .badge.session_start { background: rgba(59,130,246,0.1); color: #60a5fa; border: 1px solid rgba(59,130,246,0.2); }
         .badge.behavior_batch { background: rgba(245,158,11,0.1); color: #fbbf24; border: 1px solid rgba(245,158,11,0.2); }
         .badge.login_attempt { background: rgba(16,185,129,0.1); color: #10b981; border: 1px solid rgba(16,185,129,0.2); }
         .badge.SECURITY_ALERT { background: rgba(239,68,68,0.2); color: #ef4444; border: 1px solid #ef4444; box-shadow: 0 0 10px rgba(239,68,68,0.5); animation: pulse-red 1s infinite; }
-        
         @keyframes pulse-red { 0% { box-shadow: 0 0 5px #ef4444; } 50% { box-shadow: 0 0 20px #ef4444; } 100% { box-shadow: 0 0 5px #ef4444; } }
         
+        .origin-tag {
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            background: rgba(139, 92, 246, 0.1);
+            color: #a78bfa;
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            display: inline-block;
+            max-width: 180px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
         .code-block {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             color: #a78bfa;
             background: rgba(0,0,0,0.3);
-            padding: 0.75rem;
+            padding: 0.6rem;
             border-radius: 6px;
             border: 1px solid rgba(255,255,255,0.05);
-            max-height: 120px;
+            max-height: 100px;
             overflow-y: auto;
             margin: 0;
             white-space: pre-wrap;
         }
-        
-        .new-row {
-            animation: highlight 2.5s ease-out;
-        }
-        
+        .new-row { animation: highlight 2.5s ease-out; }
         @keyframes highlight {
             0% { background: rgba(59, 130, 246, 0.25); }
             100% { background: transparent; }
         }
+
+        /* ===== EMPTY STATE ===== */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-dim);
+        }
+        .empty-state .icon { font-size: 3rem; margin-bottom: 1rem; }
+        .empty-state h3 { font-size: 1.1rem; color: var(--text); margin-bottom: 0.5rem; }
+        .empty-state p { font-size: 0.85rem; }
     </style>
 </head>
 <body>
-    <header>
-        <h1>🛡️ MayaSec Command Center</h1>
-        <div class="status">
-            <div class="status-dot"></div>
-            System Online - Awaiting Telemetry
-        </div>
-    </header>
 
-    <div class="container">
-        <div class="kpi-grid">
-            <div class="kpi-card">
-                <h3>Total Events Ingested</h3>
-                <p class="value" id="kpi-events">0</p>
-            </div>
-            <div class="kpi-card">
-                <h3>Active Sessions</h3>
-                <p class="value" id="kpi-sessions">0</p>
-            </div>
-            <div class="kpi-card">
-                <h3>Last Event Received</h3>
-                <p class="value" id="kpi-time" style="font-size: 1.5rem; margin-top: 10px; color: var(--text);">Waiting...</p>
-            </div>
+    <!-- ===== SIDEBAR ===== -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h1>🛡️ MayaSec</h1>
+            <p>Security Command Center</p>
         </div>
 
-        <div class="table-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th style="width: 15%">Timestamp</th>
-                        <th style="width: 15%">Event Type</th>
-                        <th style="width: 20%">Session ID</th>
-                        <th style="width: 50%">Payload Details</th>
-                    </tr>
-                </thead>
-                <tbody id="events-body">
-                    <!-- Events will be injected here -->
-                </tbody>
-            </table>
+        <div class="site-list-title">Monitored Websites</div>
+        <div class="site-list" id="site-list">
+            <div class="site-item active" data-site="all" onclick="selectSite('all')">
+                <div class="site-dot"></div>
+                <div class="site-info">
+                    <div class="site-name">All Websites</div>
+                    <div class="site-meta">Aggregate view</div>
+                </div>
+                <span class="site-count" id="all-count">0</span>
+            </div>
+            <!-- Dynamic site items injected here -->
+        </div>
+
+        <div class="sidebar-footer">
+            MayaSec v1.0 · CBI Hackathon 2026
+        </div>
+    </div>
+
+    <!-- ===== MAIN PANEL ===== -->
+    <div class="main">
+        <header>
+            <div class="header-left">
+                <h2 id="page-title">All Websites</h2>
+                <p id="page-subtitle">Monitoring all connected websites</p>
+            </div>
+            <div class="status">
+                <div class="status-dot"></div>
+                <span id="status-text">System Online</span>
+            </div>
+        </header>
+
+        <div class="content">
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <h3>Total Events</h3>
+                    <p class="value blue" id="kpi-events">0</p>
+                </div>
+                <div class="kpi-card">
+                    <h3>Active Sessions</h3>
+                    <p class="value green" id="kpi-sessions">0</p>
+                </div>
+                <div class="kpi-card">
+                    <h3>Security Alerts</h3>
+                    <p class="value red" id="kpi-alerts">0</p>
+                </div>
+                <div class="kpi-card">
+                    <h3>Connected Sites</h3>
+                    <p class="value purple" id="kpi-sites">0</p>
+                </div>
+            </div>
+
+            <div class="table-header">
+                <h3>📡 Live Event Stream</h3>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 10%">Time</th>
+                            <th style="width: 12%">Type</th>
+                            <th style="width: 15%">Origin</th>
+                            <th style="width: 15%">Session</th>
+                            <th style="width: 48%">Details</th>
+                        </tr>
+                    </thead>
+                    <tbody id="events-body"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 
@@ -210,79 +380,223 @@
         const eventsBody = document.getElementById('events-body');
         const kpiEvents = document.getElementById('kpi-events');
         const kpiSessions = document.getElementById('kpi-sessions');
-        const kpiTime = document.getElementById('kpi-time');
-        
-        let totalEvents = 0;
-        const uniqueSessions = new Set();
+        const kpiAlerts = document.getElementById('kpi-alerts');
+        const kpiSites = document.getElementById('kpi-sites');
+        const siteList = document.getElementById('site-list');
 
-        function addRow(payload, animate = false) {
+        let allEvents = [];
+        let currentFilter = 'all';
+        const uniqueSessions = new Set();
+        const siteSessionMap = {}; // site -> Set of sessions
+        const siteAlertMap = {};   // site -> alert count
+        let alertCount = 0;
+        let knownSites = new Map();
+
+        function selectSite(siteName) {
+            currentFilter = siteName;
+            
+            // Update active state in sidebar
+            document.querySelectorAll('.site-item').forEach(el => el.classList.remove('active'));
+            document.querySelector(`.site-item[data-site="${CSS.escape(siteName)}"]`)?.classList.add('active');
+
+            // Update header
+            const pageTitle = document.getElementById('page-title');
+            const pageSub = document.getElementById('page-subtitle');
+            if (siteName === 'all') {
+                pageTitle.textContent = 'All Websites';
+                pageSub.textContent = 'Monitoring all connected websites';
+            } else {
+                pageTitle.textContent = siteName;
+                pageSub.textContent = `Monitoring ${siteName}`;
+            }
+
+            // Re-render table with filter
+            renderTable();
+            updateKPIs();
+        }
+
+        function renderTable() {
+            eventsBody.innerHTML = '';
+            const filtered = currentFilter === 'all' 
+                ? allEvents 
+                : allEvents.filter(p => p.origin === currentFilter);
+            
+            filtered.slice(0, 50).forEach(p => addRowDOM(p, false));
+        }
+
+        function addRowDOM(payload, animate) {
             const tr = document.createElement('tr');
             if (animate) tr.className = 'new-row';
             
-            const time = new Date(payload.timestamp).toLocaleTimeString();
-            
+            const time = payload.timestamp ? new Date(payload.timestamp).toLocaleTimeString() : '--';
+            const origin = payload.origin || 'Unknown';
+
             let details = '';
             if (payload.type === 'session_start') {
-                details = `Browser: ${payload.data.browser.name} | OS: ${payload.data.device.platform} | Res: ${payload.data.device.screenWidth}x${payload.data.device.screenHeight}`;
+                details = `Browser: ${payload.data?.browser?.name || 'N/A'} | OS: ${payload.data?.device?.platform || 'N/A'}`;
             } else if (payload.type === 'behavior_batch') {
-                details = `${payload.events.length} user actions recorded (Clicks/Moves).`;
+                details = `${payload.events?.length || 0} user actions recorded`;
+            } else if (payload.type === 'SECURITY_ALERT') {
+                details = `⚠️ ${payload.data?.details || payload.data?.reason || 'Alert'}`;
+            } else if (payload.type === 'login_attempt') {
+                details = 'User attempted login';
             } else {
-                details = JSON.stringify(payload);
+                details = JSON.stringify(payload).substring(0, 100);
             }
 
-            const rawJson = JSON.stringify(payload.data || payload.events, null, 2);
+            const rawJson = JSON.stringify(payload.data || payload.events || payload, null, 2);
 
             tr.innerHTML = `
-                <td style="color: var(--text-dim);">${time}</td>
-                <td><span class="badge ${payload.type}">${payload.type.replace('_', ' ')}</span></td>
-                <td style="font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; color: var(--text-dim);">${payload.sessionId}</td>
+                <td style="color: var(--text-dim); font-size: 0.85rem;">${time}</td>
+                <td><span class="badge ${payload.type}">${(payload.type || 'unknown').replace('_', ' ')}</span></td>
+                <td><span class="origin-tag" title="${origin}">${origin}</span></td>
+                <td style="font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--text-dim);">${payload.sessionId || '--'}</td>
                 <td>
-                    <div style="margin-bottom: 8px; font-weight: 600; color: #fff;">${details}</div>
+                    <div style="margin-bottom: 6px; font-weight: 500; font-size: 0.85rem;">${details}</div>
                     <pre class="code-block">${rawJson}</pre>
                 </td>
             `;
-            
-            eventsBody.insertBefore(tr, eventsBody.firstChild);
-            
-            if (eventsBody.children.length > 50) {
-                eventsBody.removeChild(eventsBody.lastChild);
-            }
-
-            totalEvents++;
-            uniqueSessions.add(payload.sessionId);
-            
-            kpiEvents.textContent = totalEvents;
-            kpiSessions.textContent = uniqueSessions.size;
-            kpiTime.textContent = time;
+            eventsBody.appendChild(tr);
         }
 
-        // Connect to SSE Stream
+        function addEvent(payload, animate) {
+            allEvents.unshift(payload);
+            if (allEvents.length > 200) allEvents.pop();
+
+            // Track sessions
+            if (payload.sessionId) {
+                uniqueSessions.add(payload.sessionId);
+                const site = payload.origin || 'Unknown';
+                if (!siteSessionMap[site]) siteSessionMap[site] = new Set();
+                siteSessionMap[site].add(payload.sessionId);
+            }
+
+            // Track alerts
+            if (payload.type === 'SECURITY_ALERT') {
+                alertCount++;
+                const site = payload.origin || 'Unknown';
+                siteAlertMap[site] = (siteAlertMap[site] || 0) + 1;
+            }
+
+            // Add to table if matches filter
+            if (currentFilter === 'all' || payload.origin === currentFilter) {
+                const tr = document.createElement('tr');
+                if (animate) tr.className = 'new-row';
+                
+                const time = payload.timestamp ? new Date(payload.timestamp).toLocaleTimeString() : '--';
+                const origin = payload.origin || 'Unknown';
+
+                let details = '';
+                if (payload.type === 'session_start') {
+                    details = `Browser: ${payload.data?.browser?.name || 'N/A'} | OS: ${payload.data?.device?.platform || 'N/A'}`;
+                } else if (payload.type === 'behavior_batch') {
+                    details = `${payload.events?.length || 0} user actions recorded`;
+                } else if (payload.type === 'SECURITY_ALERT') {
+                    details = `⚠️ ${payload.data?.details || payload.data?.reason || 'Alert'}`;
+                } else if (payload.type === 'login_attempt') {
+                    details = 'User attempted login';
+                } else {
+                    details = JSON.stringify(payload).substring(0, 100);
+                }
+
+                const rawJson = JSON.stringify(payload.data || payload.events || payload, null, 2);
+
+                tr.innerHTML = `
+                    <td style="color: var(--text-dim); font-size: 0.85rem;">${time}</td>
+                    <td><span class="badge ${payload.type}">${(payload.type || 'unknown').replace('_', ' ')}</span></td>
+                    <td><span class="origin-tag" title="${origin}">${origin}</span></td>
+                    <td style="font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--text-dim);">${payload.sessionId || '--'}</td>
+                    <td>
+                        <div style="margin-bottom: 6px; font-weight: 500; font-size: 0.85rem;">${details}</div>
+                        <pre class="code-block">${rawJson}</pre>
+                    </td>
+                `;
+                eventsBody.insertBefore(tr, eventsBody.firstChild);
+                
+                // Keep table manageable
+                if (eventsBody.children.length > 50) {
+                    eventsBody.removeChild(eventsBody.lastChild);
+                }
+            }
+
+            updateKPIs();
+        }
+
+        function updateKPIs() {
+            if (currentFilter === 'all') {
+                kpiEvents.textContent = allEvents.length;
+                kpiSessions.textContent = uniqueSessions.size;
+                kpiAlerts.textContent = alertCount;
+            } else {
+                const filtered = allEvents.filter(p => p.origin === currentFilter);
+                kpiEvents.textContent = filtered.length;
+                kpiSessions.textContent = (siteSessionMap[currentFilter]?.size || 0);
+                kpiAlerts.textContent = (siteAlertMap[currentFilter] || 0);
+            }
+            kpiSites.textContent = knownSites.size;
+            document.getElementById('all-count').textContent = allEvents.length;
+        }
+
+        function updateSiteList(sites) {
+            sites.forEach(site => {
+                knownSites.set(site.name, site);
+
+                // Check if site item already exists
+                let existing = document.querySelector(`.site-item[data-site="${CSS.escape(site.name)}"]`);
+                if (!existing) {
+                    const div = document.createElement('div');
+                    div.className = 'site-item';
+                    div.setAttribute('data-site', site.name);
+                    div.onclick = () => selectSite(site.name);
+                    div.innerHTML = `
+                        <div class="site-dot"></div>
+                        <div class="site-info">
+                            <div class="site-name">${site.name}</div>
+                            <div class="site-meta">Connected</div>
+                        </div>
+                        <span class="site-count">${site.eventCount}</span>
+                    `;
+                    siteList.appendChild(div);
+                } else {
+                    existing.querySelector('.site-count').textContent = site.eventCount;
+                }
+            });
+            updateKPIs();
+        }
+
+        // ===== SSE Connection =====
         const evtSource = new EventSource('/api/events/stream');
         
         evtSource.onmessage = function(event) {
             const msg = JSON.parse(event.data);
             
             if (msg.type === 'history') {
-                const reversed = [...msg.data].reverse();
-                reversed.forEach(p => addRow(p, false));
+                msg.data.reverse().forEach(p => addEvent(p, false));
+                renderTable();
             } else if (msg.type === 'new_event') {
-                addRow(msg.data, true);
+                addEvent(msg.data, true);
+            } else if (msg.type === 'sites_update') {
+                updateSiteList(msg.data);
             }
         };
 
         evtSource.onerror = function() {
-            document.querySelector('.status').innerHTML = '<div class="status-dot" style="background: var(--danger); box-shadow: 0 0 8px var(--danger);"></div> Disconnected - Retrying...';
+            document.getElementById('status-text').textContent = 'Disconnected';
             document.querySelector('.status').style.color = 'var(--danger)';
             document.querySelector('.status').style.background = 'rgba(239, 68, 68, 0.1)';
             document.querySelector('.status').style.borderColor = 'rgba(239, 68, 68, 0.2)';
+            document.querySelector('.status-dot').style.background = 'var(--danger)';
+            document.querySelector('.status-dot').style.boxShadow = '0 0 8px var(--danger)';
         };
         
         evtSource.onopen = function() {
-            document.querySelector('.status').innerHTML = '<div class="status-dot"></div> System Online - Receiving Telemetry';
+            document.getElementById('status-text').textContent = 'System Online';
             document.querySelector('.status').style.color = 'var(--success)';
             document.querySelector('.status').style.background = 'rgba(16, 185, 129, 0.1)';
             document.querySelector('.status').style.borderColor = 'rgba(16, 185, 129, 0.2)';
-        }
+            document.querySelector('.status-dot').style.background = 'var(--success)';
+            document.querySelector('.status-dot').style.boxShadow = '0 0 8px var(--success)';
+        };
     </script>
 </body>
 </html>
