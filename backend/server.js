@@ -49,6 +49,7 @@ app.options('/api/ingest', (req, res) => {
     'Access-Control-Allow-Origin': req.headers.origin || '*',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Credentials': 'true',
     'Access-Control-Max-Age': '86400'
   });
   res.status(204).end();
@@ -605,11 +606,12 @@ app.get('/api/sites', requireAuth, async (req, res) => {
 });
 
 app.post('/api/ingest', async (req, res) => {
-  // Set CORS headers manually for cross-origin SDK requests
+  // Set CORS headers manually for cross-origin SDK requests (sendBeacon uses credentials: include)
   res.set({
     'Access-Control-Allow-Origin': req.headers.origin || '*',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type'
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Credentials': 'true'
   });
 
   const payload = req.body;
