@@ -6,8 +6,10 @@ import { startAuthInterception } from './auth.js';
 export const MayaSec = {
   sessionId: null,
   intervalId: null,
+  apiKey: null,
 
-  init() {
+  init(config = {}) {
+    this.apiKey = config.apiKey || null;
     console.log('MayaSec SDK initialized');
     const fingerprint = generateFingerprint();
     this.sessionId = fingerprint.id;
@@ -16,6 +18,7 @@ export const MayaSec = {
     sendEvent({
       type: 'session_start',
       sessionId: this.sessionId,
+      apiKey: this.apiKey,
       data: fingerprint,
       timestamp: Date.now()
     });
@@ -23,15 +26,17 @@ export const MayaSec = {
 
   start() {
     startTracking();
-    startAuthInterception(this.sessionId);
+    startAuthInterception(this.sessionId, this.apiKey);
     
+    const self = this;
     // Flush events every 3 seconds
     this.intervalId = setInterval(() => {
       const events = getEventsAndClear();
       if (events.length > 0) {
         sendEvent({
           type: 'behavior_batch',
-          sessionId: this.sessionId,
+          sessionId: self.sessionId,
+          apiKey: self.apiKey,
           events: events,
           timestamp: Date.now()
         });
@@ -46,7 +51,7 @@ export const MayaSec = {
   },
 
   version() {
-    return '0.1.0';
+    return '1.0.0';
   },
 
   destroy() {

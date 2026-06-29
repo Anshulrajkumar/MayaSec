@@ -12,10 +12,10 @@ export function startTracking() {
       timestamp: Date.now()
     });
 
-    // Client-side visual warning for the Hackathon Demo
+    // Client-side visual warning for the Hackathon demo
     const recentClicks = events.filter(ev => ev.type === 'click' && (Date.now() - ev.timestamp) < 3000);
     if (recentClicks.length >= 10 && (Date.now() - lastAlert) > 5000) {
-      alert("🚨 MAYASEC WARNING: Automated bot behavior (Click Spamming) detected! Please stop! 🚨");
+      alert("MAYASEC WARNING: Automated bot behavior (Click Spamming) detected. Please stop.");
       lastAlert = Date.now();
     }
   });
