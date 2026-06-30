@@ -1,10 +1,30 @@
-import { defaultRules } from '../rules/defaultRules.js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load all JSON rules
+const rulesDir = path.join(__dirname, '../rules');
+const ruleFiles = ['authentication.json', 'behaviour.json', 'browser.json', 'api.json', 'network.json', 'owasp.json', 'mitre.json', 'deception.json'];
+const allRules = [];
+
+for (const file of ruleFiles) {
+  try {
+    const data = fs.readFileSync(path.join(rulesDir, file), 'utf8');
+    const rules = JSON.parse(data);
+    allRules.push(...rules);
+  } catch (err) {
+    console.warn(`[RulesEngine] Could not load rule file ${file}`);
+  }
+}
 
 /**
- * Server-side rules engine for normalized events.
+ * Server-side rules engine evaluating standardized JSON detection rules.
  */
 export class RulesEngine {
-  constructor(rules = defaultRules) {
+  constructor(rules = allRules) {
     this.rules = rules;
   }
 
@@ -15,8 +35,35 @@ export class RulesEngine {
    */
   process(event, context) {
     return this.rules.flatMap((rule) => {
-      const result = rule.evaluate(event, context);
-      if (!result) return [];
+      if (!rule.detection) return [];
+      
+      const { targetEvent, threshold, timeWindow, condition } = rule.detection;
+      
+      // We only evaluate if the current event matches the rule's target event
+      if (event.event !== targetEvent) return [];
+      
+      let matched = false;
+      const recentEvents = timeWindow > 0 
+        ? context.sessionEvents.filter(e => e.event === targetEvent && (new Date(event.timestamp).getTime() - new Date(e.timestamp).getTime() <= timeWindow * 1000))
+        : context.sessionEvents.filter(e => e.event === targetEvent);
+
+      if (condition === 'count') {
+        // Trigger exactly when threshold is reached or multiples of it
+        if (recentEvents.length > 0 && recentEvents.length % threshold === 0) {
+          matched = true;
+        }
+      } else if (condition === 'no_mouse_movement') {
+        const moves = context.sessionEvents.filter((item) => item.event === 'MOUSE_ACTIVITY');
+        if (moves.length === 0 && recentEvents.length > 0 && recentEvents.length % threshold === 0) {
+          matched = true;
+        }
+      } else if (condition === 'webdriver_true') {
+        if (event.metadata?.fingerprint?.webdriver) {
+          matched = true;
+        }
+      }
+
+      if (!matched) return [];
 
       return [{
         id: `derived_${rule.id}_${event.id}`,
@@ -24,47 +71,26 @@ export class RulesEngine {
         websiteId: event.websiteId,
         timestamp: new Date().toISOString(),
         category: 'alert',
-        event: result.event,
-        severity: result.severity || rule.severity,
-        risk: result.score ?? rule.score,
+        event: rule.action === 'BLOCK' || rule.action === 'CHALLENGE' ? 'SECURITY_ALERT' : 'SUSPICIOUS_BEHAVIOUR',
+        severity: rule.severity,
+        risk: rule.baseScore,
+        confidence: rule.confidence,
         metadata: {
           ruleId: rule.id,
           ruleName: rule.name,
+          framework: rule.framework,
           description: rule.description,
-          action: result.action,
+          action: rule.action,
           sourceEventId: event.id
         },
-        type: result.event,
+        type: rule.action === 'BLOCK' || rule.action === 'CHALLENGE' ? 'SECURITY_ALERT' : 'SUSPICIOUS_BEHAVIOUR',
         origin: event.origin,
         location: event.location,
         data: {
           ruleId: rule.id,
-          reason: result.event,
+          reason: rule.name,
           details: rule.description,
-          confidence: result.severity === 'HIGH' ? 'High (95%)' : 'Medium (80%)'
-        },
-        _apiKey: event._apiKey
-      }, {
-        id: `alert_${rule.id}_${event.id}`,
-        sessionId: event.sessionId,
-        websiteId: event.websiteId,
-        timestamp: new Date().toISOString(),
-        category: 'alert',
-        event: 'SECURITY_ALERT',
-        severity: result.severity || rule.severity,
-        risk: result.score ?? rule.score,
-        metadata: {
-          ruleId: rule.id,
-          action: result.action,
-          sourceEvent: result.event
-        },
-        type: 'SECURITY_ALERT',
-        origin: event.origin,
-        location: event.location,
-        data: {
-          reason: result.event,
-          details: rule.description,
-          confidence: result.severity === 'HIGH' ? 'High (95%)' : 'Medium (80%)'
+          confidence: `${rule.confidence}%`
         },
         _apiKey: event._apiKey
       }];

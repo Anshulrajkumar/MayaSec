@@ -1,0 +1,25 @@
+[
+  {
+    "id": "MITRE-001",
+    "name": "Defense Evasion Activity",
+    "category": "mitre",
+    "description": "General mapping for attempts to bypass client-side security controls.",
+    "framework": {
+      "owasp": "OAT-009",
+      "mitre": "T1562.001",
+      "capec": "CAPEC-17",
+      "nist": "PR.PT"
+    },
+    "severity": "HIGH",
+    "baseScore": 75,
+    "confidence": 90,
+    "action": "BLOCK",
+    "references": ["MITRE ATT&CK"],
+    "detection": {
+      "targetEvent": "SECURITY_EVASION",
+      "threshold": 1,
+      "timeWindow": 0,
+      "condition": "count"
+    }
+  }
+]

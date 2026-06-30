@@ -1,0 +1,48 @@
+[
+  {
+    "id": "INJ-001",
+    "name": "SQL Injection Pattern Detected",
+    "category": "injection",
+    "description": "Detects common SQL injection vectors in input fields or URL parameters.",
+    "framework": {
+      "owasp": "OWASP Top 10 A03:2021-Injection",
+      "mitre": "T1190",
+      "capec": "CAPEC-66",
+      "nist": "PR.PT"
+    },
+    "severity": "CRITICAL",
+    "baseScore": 85,
+    "confidence": 90,
+    "action": "BLOCK",
+    "references": ["OWASP Top 10", "MITRE ATT&CK", "CAPEC"],
+    "detection": {
+      "targetEvent": "SQL_INJECTION",
+      "threshold": 1,
+      "timeWindow": 0,
+      "condition": "count"
+    }
+  },
+  {
+    "id": "INJ-002",
+    "name": "Cross-Site Scripting (XSS)",
+    "category": "injection",
+    "description": "Detects unauthorized script execution or reflection in input data.",
+    "framework": {
+      "owasp": "OWASP Top 10 A03:2021-Injection",
+      "mitre": "T1190",
+      "capec": "CAPEC-63",
+      "nist": "PR.PT"
+    },
+    "severity": "HIGH",
+    "baseScore": 75,
+    "confidence": 85,
+    "action": "BLOCK",
+    "references": ["OWASP Top 10", "MITRE ATT&CK", "CAPEC"],
+    "detection": {
+      "targetEvent": "SCRIPT_INJECTION",
+      "threshold": 1,
+      "timeWindow": 0,
+      "condition": "count"
+    }
+  }
+]

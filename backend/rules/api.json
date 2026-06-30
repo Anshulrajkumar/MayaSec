@@ -1,0 +1,25 @@
+[
+  {
+    "id": "API-001",
+    "name": "Excessive API Errors",
+    "category": "api",
+    "description": "Detects anomalous spikes in API error responses, indicating probing or fuzzing.",
+    "framework": {
+      "owasp": "API Security Top 10 API4:2023",
+      "mitre": "T1190",
+      "capec": "CAPEC-121",
+      "nist": "DE.AE"
+    },
+    "severity": "MEDIUM",
+    "baseScore": 40,
+    "confidence": 75,
+    "action": "MONITOR",
+    "references": ["OWASP API Security"],
+    "detection": {
+      "targetEvent": "API_ERROR",
+      "threshold": 10,
+      "timeWindow": 60,
+      "condition": "count"
+    }
+  }
+]

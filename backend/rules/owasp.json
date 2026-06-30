@@ -1,0 +1,25 @@
+[
+  {
+    "id": "OWASP-001",
+    "name": "DOM Tampering",
+    "category": "owasp",
+    "description": "Detects unauthorized modifications to the Document Object Model.",
+    "framework": {
+      "owasp": "ASVS 5.3",
+      "mitre": "T1189",
+      "capec": "CAPEC-31",
+      "nist": "PR.DS"
+    },
+    "severity": "HIGH",
+    "baseScore": 65,
+    "confidence": 85,
+    "action": "BLOCK",
+    "references": ["OWASP ASVS"],
+    "detection": {
+      "targetEvent": "DOM_MUTATION",
+      "threshold": 50,
+      "timeWindow": 10,
+      "condition": "count"
+    }
+  }
+]

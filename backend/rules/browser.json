@@ -1,0 +1,48 @@
+[
+  {
+    "id": "BROWSER-001",
+    "name": "Headless Browser Detected",
+    "category": "browser",
+    "description": "Detects webdriver-enabled fingerprint sessions commonly used by Selenium, Puppeteer, or Playwright.",
+    "framework": {
+      "owasp": "OAT-011 Scraping",
+      "mitre": "T1595.002",
+      "capec": "CAPEC-169",
+      "nist": "DE.CM"
+    },
+    "severity": "HIGH",
+    "baseScore": 60,
+    "confidence": 95,
+    "action": "CHALLENGE",
+    "references": ["OWASP Automated Threats"],
+    "detection": {
+      "targetEvent": "SESSION_STARTED",
+      "threshold": 1,
+      "timeWindow": 0,
+      "condition": "webdriver_true"
+    }
+  },
+  {
+    "id": "BROWSER-002",
+    "name": "DevTools Opened",
+    "category": "browser",
+    "description": "Detects if a user has opened the browser developer tools, which may precede DOM tampering or debugging.",
+    "framework": {
+      "owasp": "ASVS 14.1",
+      "mitre": "T1059",
+      "capec": "CAPEC-137",
+      "nist": "DE.CM"
+    },
+    "severity": "LOW",
+    "baseScore": 15,
+    "confidence": 90,
+    "action": "MONITOR",
+    "references": ["OWASP ASVS"],
+    "detection": {
+      "targetEvent": "DEVTOOLS_OPENED",
+      "threshold": 1,
+      "timeWindow": 0,
+      "condition": "count"
+    }
+  }
+]

@@ -1,0 +1,25 @@
+[
+  {
+    "id": "NET-001",
+    "name": "Impossible Travel",
+    "category": "network",
+    "description": "Detects logins from geographically distant locations in an impossible timeframe.",
+    "framework": {
+      "owasp": "OAT-007",
+      "mitre": "T1078",
+      "capec": "CAPEC-115",
+      "nist": "PR.AC"
+    },
+    "severity": "HIGH",
+    "baseScore": 60,
+    "confidence": 85,
+    "action": "REVIEW",
+    "references": ["MITRE ATT&CK"],
+    "detection": {
+      "targetEvent": "IMPOSSIBLE_TRAVEL",
+      "threshold": 1,
+      "timeWindow": 0,
+      "condition": "count"
+    }
+  }
+]

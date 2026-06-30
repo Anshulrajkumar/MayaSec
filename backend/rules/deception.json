@@ -1,0 +1,25 @@
+[
+  {
+    "id": "DEC-001",
+    "name": "Honeypot Triggered",
+    "category": "deception",
+    "description": "Interaction with a hidden form field or element intended to trap automated scanners.",
+    "framework": {
+      "owasp": "OAT-011",
+      "mitre": "T1595",
+      "capec": "CAPEC-118",
+      "nist": "DE.DP"
+    },
+    "severity": "CRITICAL",
+    "baseScore": 90,
+    "confidence": 99,
+    "action": "BLOCK",
+    "references": ["MITRE Engage"],
+    "detection": {
+      "targetEvent": "HONEYPOT_TRIGGER",
+      "threshold": 1,
+      "timeWindow": 0,
+      "condition": "count"
+    }
+  }
+]

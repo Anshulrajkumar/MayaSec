@@ -1,0 +1,48 @@
+[
+  {
+    "id": "AUTH-001",
+    "name": "Credential Stuffing",
+    "category": "authentication",
+    "description": "Multiple login attempts using different usernames from a single client within a short period.",
+    "framework": {
+      "owasp": "OAT-008 Credential Stuffing",
+      "mitre": "T1110.004",
+      "capec": "CAPEC-49",
+      "nist": "PR.AC"
+    },
+    "severity": "HIGH",
+    "baseScore": 65,
+    "confidence": 80,
+    "action": "CHALLENGE",
+    "references": ["OWASP Automated Threats", "MITRE ATT&CK", "CAPEC", "NIST CSF"],
+    "detection": {
+      "targetEvent": "LOGIN_FAILED",
+      "threshold": 3,
+      "timeWindow": 60,
+      "condition": "count"
+    }
+  },
+  {
+    "id": "AUTH-002",
+    "name": "Brute Force",
+    "category": "authentication",
+    "description": "Repeated login failures against a single user account indicating a brute force attack.",
+    "framework": {
+      "owasp": "OAT-007 Credential Cracking",
+      "mitre": "T1110.001",
+      "capec": "CAPEC-112",
+      "nist": "PR.AC"
+    },
+    "severity": "HIGH",
+    "baseScore": 70,
+    "confidence": 85,
+    "action": "BLOCK",
+    "references": ["OWASP Automated Threats", "MITRE ATT&CK"],
+    "detection": {
+      "targetEvent": "LOGIN_FAILED",
+      "threshold": 5,
+      "timeWindow": 120,
+      "condition": "count"
+    }
+  }
+]

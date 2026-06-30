@@ -176,6 +176,10 @@
             <div class="trace-risk-group">
                 <span class="trace-risk-label">RISK LEVEL</span>
                 <span class="badge-trace-high" id="trace-risk-badge">HIGH</span>
+                <button class="ai-summary-btn ai-summary-btn-trace" onclick="requestAiSummary('session')">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a4 4 0 014 4v1a3 3 0 013 3v1a2 2 0 012 2v4a6 6 0 01-6 6h-6a6 6 0 01-6-6v-4a2 2 0 012-2v-1a3 3 0 013-3V6a4 4 0 014-4z"/><circle cx="9" cy="14" r="1"/><circle cx="15" cy="14" r="1"/></svg>
+                    AI
+                </button>
             </div>
         </div>
 
@@ -230,6 +234,17 @@
             <div id="trace-empty-state" style="padding:4rem; text-align:center; color:var(--text-dim); display:block;">
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.5; margin-bottom:1rem;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 <p>No user selected. Search above or click a session ID in the Event Stream.</p>
+            </div>
+
+            <div class="ai-summary-card hidden" id="ai-summary-card-trace" style="margin:0;">
+                <div class="ai-summary-header">
+                    <span class="ai-summary-label">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a4 4 0 014 4v1a3 3 0 013 3v1a2 2 0 012 2v4a6 6 0 01-6 6h-6a6 6 0 01-6-6v-4a2 2 0 012-2v-1a3 3 0 013-3V6a4 4 0 014-4z"/><circle cx="9" cy="14" r="1"/><circle cx="15" cy="14" r="1"/></svg>
+                        MayaSec AI Analysis
+                    </span>
+                    <button class="ai-summary-close" onclick="document.getElementById('ai-summary-card-trace').classList.add('hidden')">×</button>
+                </div>
+                <div class="ai-summary-body" id="ai-summary-body-trace"></div>
             </div>
 
             <div class="table-section" id="trace-table-container" style="border:none; border-radius:0; box-shadow:none; display:none;">
@@ -340,6 +355,22 @@
                         </div>
                     </div>
                     <div id="user-detail-risk-badge" class="badge badge-low">LOW</div>
+                    <button class="ai-summary-btn" id="btn-ai-summary-ip" onclick="requestAiSummary('ip')">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a4 4 0 014 4v1a3 3 0 013 3v1a2 2 0 012 2v4a6 6 0 01-6 6h-6a6 6 0 01-6-6v-4a2 2 0 012-2v-1a3 3 0 013-3V6a4 4 0 014-4z"/><circle cx="9" cy="14" r="1"/><circle cx="15" cy="14" r="1"/></svg>
+                        AI Summary
+                    </button>
+                </div>
+                <div class="ai-summary-card hidden" id="ai-summary-card">
+                    <div class="ai-summary-header">
+                        <span class="ai-summary-label">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a4 4 0 014 4v1a3 3 0 013 3v1a2 2 0 012 2v4a6 6 0 01-6 6h-6a6 6 0 01-6-6v-4a2 2 0 012-2v-1a3 3 0 013-3V6a4 4 0 014-4z"/><circle cx="9" cy="14" r="1"/><circle cx="15" cy="14" r="1"/></svg>
+                            MayaSec AI Analysis
+                        </span>
+                        <button class="ai-summary-close" onclick="document.getElementById('ai-summary-card').classList.add('hidden')">×</button>
+                    </div>
+                    <div class="ai-summary-body" id="ai-summary-body">
+                        <!-- AI content rendered here -->
+                    </div>
                 </div>
                 <div class="table-section" style="border:none; box-shadow:none;">
                     <table><thead><tr>

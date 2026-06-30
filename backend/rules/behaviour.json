@@ -1,0 +1,48 @@
+[
+  {
+    "id": "BEHAV-001",
+    "name": "Excessive Click Velocity",
+    "category": "behaviour",
+    "description": "Detects sustained click bursts that indicate bot behavior, overriding normal human capabilities.",
+    "framework": {
+      "owasp": "OAT-011 Scraping",
+      "mitre": "T1111",
+      "capec": "CAPEC-210",
+      "nist": "DE.AE"
+    },
+    "severity": "MEDIUM",
+    "baseScore": 30,
+    "confidence": 40,
+    "action": "MONITOR",
+    "references": ["OWASP Automated Threats"],
+    "detection": {
+      "targetEvent": "CLICK_ACTIVITY",
+      "threshold": 20,
+      "timeWindow": 10,
+      "condition": "count"
+    }
+  },
+  {
+    "id": "BEHAV-002",
+    "name": "Bot Navigation Signature",
+    "category": "behaviour",
+    "description": "Detects rapid sequential interactions devoid of accompanying human-like mouse movement or keyboard input.",
+    "framework": {
+      "owasp": "OAT-011 Scraping",
+      "mitre": "T1595",
+      "capec": "CAPEC-169",
+      "nist": "DE.CM"
+    },
+    "severity": "MEDIUM",
+    "baseScore": 40,
+    "confidence": 60,
+    "action": "REVIEW",
+    "references": ["OWASP Automated Threats"],
+    "detection": {
+      "targetEvent": "CLICK_ACTIVITY",
+      "threshold": 5,
+      "timeWindow": 30,
+      "condition": "no_mouse_movement"
+    }
+  }
+]

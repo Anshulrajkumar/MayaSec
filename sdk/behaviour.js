@@ -65,12 +65,13 @@ export class BehaviourTracker {
       this.keyCount++;
 
       // Classify key type WITHOUT sending the actual key value
+      const keyStr = event.key || '';
       let keyCategory = 'other';
-      if (/^[a-zA-Z]$/.test(event.key)) keyCategory = 'letter';
-      else if (/^[0-9]$/.test(event.key)) keyCategory = 'digit';
-      else if (['Shift','Control','Alt','Meta','Tab','CapsLock'].includes(event.key)) keyCategory = 'modifier';
-      else if (['Enter','Backspace','Delete','Escape'].includes(event.key)) keyCategory = 'control';
-      else if (event.key.length === 1) keyCategory = 'symbol';
+      if (/^[a-zA-Z]$/.test(keyStr)) keyCategory = 'letter';
+      else if (/^[0-9]$/.test(keyStr)) keyCategory = 'digit';
+      else if (['Shift','Control','Alt','Meta','Tab','CapsLock'].includes(keyStr)) keyCategory = 'modifier';
+      else if (['Enter','Backspace','Delete','Escape'].includes(keyStr)) keyCategory = 'control';
+      else if (keyStr.length === 1) keyCategory = 'symbol';
 
       // Check if the user is typing in a sensitive field
       const target = event.target;
