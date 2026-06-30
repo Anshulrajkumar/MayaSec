@@ -6,6 +6,8 @@ import { validateRuntimeConfig } from './database/supabase.js';
 import { authRouter } from './routes/authRoutes.js';
 import { eventRouter } from './routes/eventRoutes.js';
 
+import { ruleRouter } from './routes/ruleRoutes.js';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -22,6 +24,7 @@ const sdkCors = cors({
 app.use(express.json());
 app.use('/sdk', sdkCors, express.static(path.join(__dirname, '../sdk')));
 app.use('/api/auth', authRouter);
+app.use('/api/rules', ruleRouter);
 app.use('/api', eventRouter);
 app.use('/', express.static(path.join(__dirname, '../dashboard')));
 

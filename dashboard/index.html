@@ -86,6 +86,10 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
                 Trace Activity
             </div>
+            <div class="nav-item" data-nav="rules" onclick="switchNav('rules')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                Rule Engine
+            </div>
             <div class="nav-separator"></div>
             <div class="nav-item" onclick="openSettings()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
@@ -229,6 +233,7 @@
             <div class="trace-search-bar" style="padding:16px 24px; background:var(--surface); border-bottom:1px solid var(--border); display:flex; gap:12px; align-items:center;">
                 <input type="text" id="trace-search-input" class="domain-input" placeholder="Search by Session ID, IP Address, Email, or Browser..." style="flex:1;">
                 <button class="action-btn" onclick="executeTraceSearch()">Search & Trace</button>
+                <button class="action-btn block" onclick="if(traceSessionId) { openReplay(traceSessionId); } else { alert('Please search for a session first.'); }">Replay Session</button>
             </div>
             
             <div id="trace-empty-state" style="padding:4rem; text-align:center; color:var(--text-dim); display:block;">
@@ -383,6 +388,19 @@
                 </div>
             </div>
         </div>
+    
+        <!-- Rule Engine Content -->
+        <div class="content hidden" id="content-rules" style="padding: 24px; background:var(--bg);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 24px;">
+                <h3 style="margin:0;">Detection Rules</h3>
+                <button class="action-btn" onclick="openRuleModal()">+ Create Custom Rule</button>
+            </div>
+            
+            <div id="rules-list-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px;">
+                <!-- Rules populated here -->
+            </div>
+        </div>
+        
     </div>
 </div>
 
@@ -445,6 +463,87 @@
                 <button class="action-btn block" onclick="doAction('block')">Block</button>
                 <button class="action-btn escalate" onclick="doAction('escalate')">Escalate</button>
             </div>
+        </div>
+    </div>
+</div>
+</div>
+
+<!-- Replay Modal -->
+<div id="replay-modal" class="modal-overlay hidden" style="z-index:9999;">
+    <div class="modal-content" style="max-width:900px; width:95%; height:80vh; display:flex; flex-direction:column; padding:0; overflow:hidden; background:var(--surface); border-radius:8px;">
+        <div class="modal-header" style="padding:16px 24px; background:var(--surface); border-bottom:1px solid var(--border); display:flex; justify-content:space-between;">
+            <h3 style="margin:0;">Visual Session Replay</h3>
+            <button class="modal-close" onclick="closeReplayModal()">×</button>
+        </div>
+        <div id="replay-screen" style="flex:1; background:#1e1e1e; position:relative; overflow:hidden;">
+            <div id="replay-cursor" style="position:absolute; width:14px; height:14px; background:red; border-radius:50%; box-shadow:0 0 10px rgba(255,0,0,0.8); pointer-events:none; z-index:100; transition:all 0.1s linear; transform:translate(-50%, -50%); display:none;"></div>
+            <div id="replay-clicks-container"></div>
+        </div>
+        <div class="modal-footer" style="padding:16px 24px; background:var(--surface); border-top:1px solid var(--border); display:flex; align-items:center; gap:16px;">
+            <button class="action-btn" id="btn-replay-play" onclick="toggleReplay()">Play</button>
+            <span id="replay-status" class="mono" style="color:var(--text-dim);">00:00 / 00:00</span>
+            <input type="range" id="replay-scrubber" style="flex:1;" min="0" value="0" disabled>
+        </div>
+    </div>
+</div>
+
+<!-- Create Rule Modal -->
+<div id="rule-modal" class="modal-overlay hidden">
+    <div class="modal-content" style="max-width: 500px; background:var(--surface); border-radius:8px; padding:24px;">
+        <div class="modal-header" style="display:flex; justify-content:space-between; margin-bottom:16px;">
+            <h3 style="margin:0;">Create Detection Rule</h3>
+            <button class="modal-close" onclick="document.getElementById('rule-modal').classList.add('hidden')">×</button>
+        </div>
+        <div class="modal-body" style="display:flex; flex-direction:column; gap:12px;">
+            <div class="form-group">
+                <label style="display:block; font-size:0.8rem; color:var(--text-dim); margin-bottom:4px;">Rule Name</label>
+                <input type="text" id="rule-name" placeholder="e.g. Excessive Login Failures" class="domain-input" style="width:100%;">
+            </div>
+            <div class="form-group">
+                <label style="display:block; font-size:0.8rem; color:var(--text-dim); margin-bottom:4px;">Target Event</label>
+                <select id="rule-event" class="domain-input" style="width:100%;">
+                    <option value="LOGIN_FAILED">LOGIN_FAILED</option>
+                    <option value="CLICK_ACTIVITY">CLICK_ACTIVITY</option>
+                    <option value="API_ERROR">API_ERROR</option>
+                    <option value="DOM_MUTATION">DOM_MUTATION</option>
+                </select>
+            </div>
+            <div style="display:flex; gap:16px;">
+                <div class="form-group" style="flex:1;">
+                    <label style="display:block; font-size:0.8rem; color:var(--text-dim); margin-bottom:4px;">Threshold (Count)</label>
+                    <input type="number" id="rule-threshold" value="5" class="domain-input" style="width:100%;">
+                </div>
+                <div class="form-group" style="flex:1;">
+                    <label style="display:block; font-size:0.8rem; color:var(--text-dim); margin-bottom:4px;">Time Window (Seconds)</label>
+                    <input type="number" id="rule-window" value="60" class="domain-input" style="width:100%;">
+                </div>
+            </div>
+            <div style="display:flex; gap:16px;">
+                <div class="form-group" style="flex:1;">
+                    <label style="display:block; font-size:0.8rem; color:var(--text-dim); margin-bottom:4px;">Severity</label>
+                    <select id="rule-severity" class="domain-input" style="width:100%;">
+                        <option value="LOW">LOW</option>
+                        <option value="MEDIUM">MEDIUM</option>
+                        <option value="HIGH">HIGH</option>
+                        <option value="CRITICAL">CRITICAL</option>
+                    </select>
+                </div>
+                <div class="form-group" style="flex:1;">
+                    <label style="display:block; font-size:0.8rem; color:var(--text-dim); margin-bottom:4px;">Action</label>
+                    <select id="rule-action" class="domain-input" style="width:100%;">
+                        <option value="MONITOR">MONITOR</option>
+                        <option value="CHALLENGE">CHALLENGE</option>
+                        <option value="BLOCK">BLOCK</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label style="display:block; font-size:0.8rem; color:var(--text-dim); margin-bottom:4px;">Base Risk Score (0-100)</label>
+                <input type="number" id="rule-score" value="50" class="domain-input" style="width:100%;">
+            </div>
+        </div>
+        <div class="modal-footer" style="margin-top:16px;">
+            <button class="action-btn" onclick="saveCustomRule()" style="width:100%;">Create Rule</button>
         </div>
     </div>
 </div>

@@ -6,7 +6,7 @@ let analystSessionInterval = null;
 
 // ===== NAV =====
 function hideAllContent() {
-    ['content-dashboard','content-trace','content-summary','content-notes','content-history','content-users'].forEach(id => {
+    ['content-dashboard','content-trace','content-summary','content-notes','content-history','content-users','content-rules'].forEach(id => {
         document.getElementById(id)?.classList.add('hidden');
     });
     document.getElementById('trace-bar')?.classList.add('hidden');
@@ -23,6 +23,7 @@ function switchNav(nav) {
         document.getElementById('content-notes').classList.add('hidden');
         document.getElementById('content-history').classList.add('hidden');
         document.getElementById('content-users').classList.add('hidden');
+        document.getElementById('content-rules').classList.add('hidden');
     } else if (nav === 'users') {
         currentView = 'users';
         hideAllContent();
@@ -50,6 +51,13 @@ function switchNav(nav) {
         document.getElementById('page-title').textContent = 'Trace User Activity Mode';
         document.getElementById('page-subtitle').textContent = 'Search or view detailed timeline for a session';
         renderTraceTimeline();
+    } else if (nav === 'rules') {
+        currentView = 'rules';
+        hideAllContent();
+        document.getElementById('content-rules').classList.remove('hidden');
+        document.getElementById('page-title').textContent = 'Rule Engine';
+        document.getElementById('page-subtitle').textContent = 'Manage detection rules and thresholds';
+        loadRules();
     }
 }
 
@@ -1110,4 +1118,164 @@ function renderAiMarkdown(text, eventCount) {
     html = html.replace(/(MALICIOUS|BOT|Block|Escalate)/g, '<span class="ai-verdict ai-verdict-danger">$1</span>');
 
     return `<div class="ai-content">${html}</div><div class="ai-footer">${eventCount} events analyzed</div>`;
+}
+
+// ===== RULE ENGINE =====
+async function loadRules() {
+    try {
+        const res = await fetch('/api/rules', { credentials: 'same-origin' });
+        if (!res.ok) throw new Error('Failed to fetch rules');
+        const data = await res.json();
+        
+        const container = document.getElementById('rules-list-container');
+        container.innerHTML = '';
+        
+        const allRules = [...(data.systemRules || []), ...(data.customRules || [])];
+        
+        allRules.forEach(rule => {
+            const isCustom = rule.id.startsWith('CUSTOM-');
+            const color = rule.severity === 'CRITICAL' || rule.severity === 'HIGH' ? 'var(--danger)' : rule.severity === 'MEDIUM' ? 'var(--accent)' : 'var(--success)';
+            
+            container.innerHTML += `
+                <div class="users-stat-item" style="position:relative; padding:16px;">
+                    ${isCustom ? `<button class="action-btn" style="position:absolute; top:8px; right:8px; padding:2px 6px; background:var(--danger); color:white; border:none;" onclick="deleteCustomRule('${rule.id}')">Delete</button>` : ''}
+                    <div style="font-size:0.75rem; color:${color}; font-weight:bold; letter-spacing:0.05em; margin-bottom:4px;">${rule.severity} RISK</div>
+                    <div style="font-weight:600; font-size:1rem; margin-bottom:8px;">${escapeHtml(rule.name)}</div>
+                    <div style="font-size:0.8rem; color:var(--text-dim); margin-bottom:12px; line-height:1.4;">${escapeHtml(rule.description)}</div>
+                    <div style="display:flex; justify-content:space-between; font-size:0.75rem; background:var(--bg); padding:8px; border-radius:4px;">
+                        <div><span style="color:var(--text-dim)">Score:</span> ${rule.baseScore}</div>
+                        <div><span style="color:var(--text-dim)">Action:</span> ${rule.action}</div>
+                    </div>
+                </div>
+            `;
+        });
+    } catch (err) {
+        console.error('Failed to load rules', err);
+    }
+}
+
+function openRuleModal() {
+    document.getElementById('rule-modal').classList.remove('hidden');
+}
+
+async function saveCustomRule() {
+    const payload = {
+        name: document.getElementById('rule-name').value,
+        description: 'Custom detection rule created via UI.',
+        severity: document.getElementById('rule-severity').value,
+        baseScore: parseInt(document.getElementById('rule-score').value, 10),
+        confidence: 80,
+        action: document.getElementById('rule-action').value,
+        detection: {
+            targetEvent: document.getElementById('rule-event').value,
+            threshold: parseInt(document.getElementById('rule-threshold').value, 10),
+            timeWindow: parseInt(document.getElementById('rule-window').value, 10),
+            condition: 'count'
+        }
+    };
+    
+    try {
+        await fetch('/api/rules', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify(payload)
+        });
+        document.getElementById('rule-modal').classList.add('hidden');
+        loadRules();
+    } catch (err) {
+        alert('Failed to save rule: ' + err.message);
+    }
+}
+
+async function deleteCustomRule(id) {
+    if (!confirm('Delete this custom rule?')) return;
+    try {
+        await fetch(`/api/rules/${id}`, { 
+            method: 'DELETE',
+            credentials: 'same-origin'
+        });
+        loadRules();
+    } catch (err) {
+        alert('Failed to delete rule: ' + err.message);
+    }
+}
+
+// ===== SESSION REPLAY =====
+let replayEvents = [];
+let replayTimer = null;
+let replayTimeMs = 0;
+let replayIsPlaying = false;
+
+function openReplay(sessionId) {
+    replayEvents = allEvents.filter(e => e.sessionId === sessionId && (e.type === 'MOUSE_ACTIVITY' || e.type === 'CLICK_ACTIVITY')).sort((a,b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    
+    if (replayEvents.length === 0) {
+        alert("No mouse or click events found for replay in this session.");
+        return;
+    }
+    
+    const container = document.getElementById('replay-clicks-container');
+    container.innerHTML = ''; // clear clicks
+    
+    document.getElementById('replay-modal').classList.remove('hidden');
+    document.getElementById('replay-cursor').style.display = 'block';
+    
+    replayTimeMs = 0;
+    updateReplayUI();
+}
+
+function closeReplayModal() {
+    document.getElementById('replay-modal').classList.add('hidden');
+    if (replayTimer) clearInterval(replayTimer);
+    replayIsPlaying = false;
+    document.getElementById('btn-replay-play').textContent = 'Play';
+}
+
+function toggleReplay() {
+    if (replayIsPlaying) {
+        clearInterval(replayTimer);
+        replayIsPlaying = false;
+        document.getElementById('btn-replay-play').textContent = 'Play';
+    } else {
+        if (replayTimeMs >= replayEvents.length * 100) replayTimeMs = 0; // restart
+        replayIsPlaying = true;
+        document.getElementById('btn-replay-play').textContent = 'Pause';
+        
+        replayTimer = setInterval(() => {
+            const idx = Math.floor(replayTimeMs / 100);
+            if (idx >= replayEvents.length) {
+                clearInterval(replayTimer);
+                replayIsPlaying = false;
+                document.getElementById('btn-replay-play').textContent = 'Play';
+                return;
+            }
+            
+            const ev = replayEvents[idx];
+            if (ev.data && typeof ev.data.x === 'number') {
+                const cursor = document.getElementById('replay-cursor');
+                // Maps viewport coordinates approximately to the replay modal relative space
+                cursor.style.left = `${Math.min(100, Math.max(0, (ev.data.x / 1920) * 100))}%`;
+                cursor.style.top = `${Math.min(100, Math.max(0, (ev.data.y / 1080) * 100))}%`;
+                
+                if (ev.type === 'CLICK_ACTIVITY') {
+                    const clickMark = document.createElement('div');
+                    clickMark.style.cssText = `position:absolute; width:16px; height:16px; border:2px solid yellow; border-radius:50%; left:${cursor.style.left}; top:${cursor.style.top}; transform:translate(-50%,-50%); animation: ping 1s forwards;`;
+                    document.getElementById('replay-clicks-container').appendChild(clickMark);
+                }
+            }
+            
+            replayTimeMs += 100;
+            updateReplayUI();
+        }, 100);
+    }
+}
+
+function updateReplayUI() {
+    const totalS = Math.floor((replayEvents.length * 100) / 1000);
+    const currS = Math.floor(replayTimeMs / 1000);
+    document.getElementById('replay-status').textContent = `00:0${currS} / 00:0${totalS}`;
+    const scrubber = document.getElementById('replay-scrubber');
+    scrubber.max = replayEvents.length * 100;
+    scrubber.value = replayTimeMs;
 }

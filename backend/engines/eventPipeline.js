@@ -21,6 +21,7 @@ export class EventPipeline {
   processBatch(events, context) {
     const normalizedEvents = [];
     const derivedEvents = [];
+    let isCritical = false;
 
     for (const event of events) {
       const normalized = eventNormalizer.normalize(event, context);
@@ -28,6 +29,8 @@ export class EventPipeline {
       const risk = riskEngine.apply(normalized);
       normalized.riskScore = risk.score;
       normalized.riskLevel = risk.level;
+      
+      if (risk.level === 'CRITICAL') isCritical = true;
 
       this.storeSessionEvent(normalized);
       eventStore.save(normalized);
@@ -40,6 +43,9 @@ export class EventPipeline {
         const derivedRisk = riskEngine.apply(derived);
         derived.riskScore = derivedRisk.score;
         derived.riskLevel = derivedRisk.level;
+        
+        if (derivedRisk.level === 'CRITICAL') isCritical = true;
+        
         this.storeSessionEvent(derived);
         eventStore.save(derived);
         derivedEvents.push(derived);
@@ -49,7 +55,7 @@ export class EventPipeline {
 
     const sites = siteRegistryService.listByApiKey(context.apiKey);
     broadcastService.broadcast('sites_update', sites, context.apiKey);
-    return { normalizedEvents, derivedEvents, sites };
+    return { normalizedEvents, derivedEvents, sites, isCritical };
   }
 
   /**
