@@ -99,18 +99,36 @@ export class BrowserMonitor {
     }, 1000);
 
     this.mutationObserver = new MutationObserver((mutations) => {
-      const suspicious = mutations.some((mutation) => Array.from(mutation.addedNodes).some((node) => node.nodeName === 'SCRIPT'));
+      let injectedScripts = [];
+      
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+          if (node.nodeName === 'SCRIPT') {
+            // Filter out standard dynamic script loading (React/Next.js chunks, Analytics, etc.)
+            // Flag inline scripts (common XSS vector) or data URIs
+            if (!node.src && node.textContent && node.textContent.trim().length > 0) {
+              // Ignore Next.js data scripts or basic JSON data dumps
+              if (!node.type || node.type === 'text/javascript' || node.type === 'module') {
+                injectedScripts.push(node.textContent.substring(0, 100));
+              }
+            } else if (node.src && node.src.startsWith('data:')) {
+              injectedScripts.push(node.src.substring(0, 100));
+            }
+          }
+        });
+      });
 
       emitMutation(mutations.length);
 
-      if (suspicious) {
+      if (injectedScripts.length > 0) {
         emitEvent({
           sessionId: sessionManager.getSession()?.id || '',
           category: 'monitor',
           event: 'SCRIPT_INJECTION',
           severity: 'HIGH',
           metadata: {
-            mutationCount: mutations.length
+            mutationCount: mutations.length,
+            preview: injectedScripts[0]
           }
         });
       }
