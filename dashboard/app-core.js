@@ -133,6 +133,18 @@ function copyApiKey(trigger) {
     const prev = btn.textContent; btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = prev, 1500);
 }
 
+function copySnippet(btn) {
+    const wrapper = btn.closest('.snippet-wrapper');
+    const snippetEl = wrapper ? wrapper.querySelector('.snippet-box') : null;
+    if (!snippetEl) return;
+    navigator.clipboard.writeText(snippetEl.textContent).then(() => {
+        const prev = btn.textContent;
+        btn.textContent = '✓ COPIED';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = prev; btn.classList.remove('copied'); }, 2000);
+    });
+}
+
 // ===== DOMAINS =====
 async function addDomain() {
     const input = document.getElementById('domain-input'), domain = input.value.trim();

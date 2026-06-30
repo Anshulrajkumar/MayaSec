@@ -44,7 +44,10 @@
             <button class="copy-btn" onclick="copyApiKey(this)">Copy</button>
         </div>
         <p style="font-size:0.8rem;color:var(--text-dim);margin-bottom:0.5rem;">Paste this into your website's &lt;head&gt; tag:</p>
-        <div class="snippet-box" id="onboard-snippet">Loading...</div>
+        <div class="snippet-wrapper">
+            <div class="snippet-box" id="onboard-snippet">Loading...</div>
+            <button class="snippet-copy-btn" onclick="copySnippet(this)" title="Copy to clipboard">COPY</button>
+        </div>
         <div class="domain-section">
             <label>Allowed Domains (for security)</label>
             <div class="domain-row">
@@ -112,16 +115,7 @@
                 <p id="page-subtitle">Real-time security monitoring overview</p>
             </div>
             <div class="topbar-right">
-                <div class="analyst-session-controls" style="display:flex; align-items:center; gap:12px; margin-right:12px; border-right:1px solid var(--border); padding-right:16px;">
-                    <span id="active-analyst-session" style="font-size:0.75rem; color:var(--text-dim); display:none; display:flex; align-items:center; gap:6px;">
-                        <span class="dot-indicator dot-red" style="animation: pulse 1.5s infinite;"></span>
-                        <b id="analyst-session-name" style="color:var(--text);">Recording</b> 
-                        <span id="analyst-session-timer" class="mono">00:00</span>
-                    </span>
-                    <button class="action-btn" id="btn-start-session" onclick="openStartSessionModal()" style="font-size:0.75rem; padding:6px 12px;">Start Session</button>
-                    <button class="action-btn block hidden" id="btn-end-session" onclick="endAnalysisSession()" style="font-size:0.75rem; padding:6px 12px;">End Session</button>
-                </div>
-                
+
                 <div class="site-selector">
                     <select id="site-select" onchange="selectSiteFromDropdown(this.value)">
                         <option value="all">Choose website</option>
@@ -568,7 +562,10 @@
         <div class="modal-section">
             <h3>Integration Snippet</h3>
             <p style="font-size:0.8rem;color:var(--text-dim);margin-bottom:0.5rem;">Paste into your website's <code>&lt;head&gt;</code> tag.</p>
-            <div class="snippet-box" id="settings-snippet"></div>
+            <div class="snippet-wrapper">
+                <div class="snippet-box" id="settings-snippet"></div>
+                <button class="snippet-copy-btn" onclick="copySnippet(this)" title="Copy to clipboard">COPY</button>
+            </div>
         </div>
     </div>
 </div>
