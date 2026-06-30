@@ -117,7 +117,7 @@ export async function ingestEvents(req, res) {
   if (result.isCritical) {
     let duration = 300000; // 5 minutes default
     
-    const hasRapidClicking = events.some(e => e.metadata?.ruleId === 'rapid-clicking' || (e.events && e.events.some(sub => sub.metadata?.ruleId === 'rapid-clicking')));
+    const hasRapidClicking = result.derivedEvents.some(e => e.metadata?.ruleId === 'rapid-clicking');
     if (hasRapidClicking) {
       duration = 120000; // 2 minutes
     }

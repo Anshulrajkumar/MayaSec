@@ -79,7 +79,7 @@ export class TransportService {
         keepalive: true
       });
       
-      if (res.ok) {
+      if (res.ok || res.status === 403) {
         const response = await res.json();
         if (response && response.action === 'TIMEOUT') {
           this.triggerTimeout(response.duration || 300000);
@@ -88,7 +88,7 @@ export class TransportService {
     } catch (error) {
       logger.error('Transport failed, re-queueing events');
       this.queue.unshift(...payload.events);
-      throw error;
+      // fail silently so it retries later
     }
   }
   async checkInitialStatus() {
@@ -107,6 +107,9 @@ export class TransportService {
   }
 
   triggerTimeout(duration) {
+    if (this._renderInterval) clearInterval(this._renderInterval);
+    if (this._countdownInterval) clearInterval(this._countdownInterval);
+
     let timeRemaining = Math.ceil(duration / 1000);
     
     const requiredCss = `position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; background: rgba(0, 0, 0, 0.85) !important; z-index: 2147483647 !important; display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; color: white !important; font-family: sans-serif !important; backdrop-filter: blur(8px) !important; opacity: 1 !important; visibility: visible !important; pointer-events: auto !important; margin: 0 !important; padding: 0 !important; transform: none !important;`;
@@ -142,16 +145,16 @@ export class TransportService {
     enforceOverlay();
     
     // Aggressive DOM/CSS enforcement loop (100ms)
-    const renderInterval = setInterval(() => {
+    this._renderInterval = setInterval(() => {
       if (timeRemaining > 0) enforceOverlay();
     }, 100);
     
     // Timer countdown loop (1000ms)
-    const countdownInterval = setInterval(() => {
+    this._countdownInterval = setInterval(() => {
       timeRemaining--;
       if (timeRemaining <= 0) {
-        clearInterval(renderInterval);
-        clearInterval(countdownInterval);
+        clearInterval(this._renderInterval);
+        clearInterval(this._countdownInterval);
         const overlay = document.getElementById('mayasec-timeout-overlay');
         if (overlay && document.body.contains(overlay)) {
           document.body.removeChild(overlay);
