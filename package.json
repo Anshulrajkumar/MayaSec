@@ -6,7 +6,8 @@
   "main": "sdk/index.js",
   "scripts": {
     "dev": "node --watch backend/server.js",
-    "start": "node backend/server.js"
+    "start": "node backend/server.js",
+    "test": "echo \"No tests specified yet\" && exit 0"
   },
   "keywords": [
     "security",
