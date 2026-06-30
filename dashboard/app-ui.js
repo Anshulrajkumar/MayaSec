@@ -5,6 +5,14 @@ let currentAnalystSession = null;
 let analystSessionInterval = null;
 
 // ===== NAV =====
+function hideAllContent() {
+    ['content-dashboard','content-trace','content-summary','content-notes','content-history','content-users'].forEach(id => {
+        document.getElementById(id)?.classList.add('hidden');
+    });
+    document.getElementById('trace-bar')?.classList.add('hidden');
+    document.getElementById('investigation-panel')?.classList.add('hidden');
+}
+
 function switchNav(nav) {
     document.querySelectorAll('.nav-item[data-nav]').forEach(el => el.classList.toggle('active', el.dataset.nav === nav));
     
@@ -14,37 +22,31 @@ function switchNav(nav) {
         document.getElementById('page-subtitle').textContent = nav === 'dashboard' ? 'Real-time security monitoring overview' : 'All incoming events';
         document.getElementById('content-notes').classList.add('hidden');
         document.getElementById('content-history').classList.add('hidden');
+        document.getElementById('content-users').classList.add('hidden');
+    } else if (nav === 'users') {
+        currentView = 'users';
+        hideAllContent();
+        document.getElementById('content-users').classList.remove('hidden');
+        document.getElementById('page-title').textContent = 'Active Users';
+        document.getElementById('page-subtitle').textContent = 'Monitor connected IPs and their activity in real-time';
+        renderUsersView();
     } else if (nav === 'notes') {
         currentView = 'notes';
-        document.getElementById('trace-bar').classList.add('hidden');
-        document.getElementById('content-dashboard').classList.add('hidden');
-        document.getElementById('content-trace').classList.add('hidden');
-        document.getElementById('content-summary').classList.add('hidden');
-        document.getElementById('content-history').classList.add('hidden');
+        hideAllContent();
         document.getElementById('content-notes').classList.remove('hidden');
-        document.getElementById('investigation-panel').classList.add('hidden');
         document.getElementById('page-title').textContent = 'Analyst Notes';
         document.getElementById('page-subtitle').textContent = 'Review your saved investigation notes and flags';
     } else if (nav === 'history') {
         currentView = 'history';
-        document.getElementById('trace-bar').classList.add('hidden');
-        document.getElementById('content-dashboard').classList.add('hidden');
-        document.getElementById('content-trace').classList.add('hidden');
-        document.getElementById('content-summary').classList.add('hidden');
-        document.getElementById('content-notes').classList.add('hidden');
+        hideAllContent();
         document.getElementById('content-history').classList.remove('hidden');
-        document.getElementById('investigation-panel').classList.add('hidden');
         document.getElementById('page-title').textContent = 'Analysis History';
         document.getElementById('page-subtitle').textContent = 'Review your past recording sessions';
     } else if (nav === 'trace') {
         currentView = 'trace';
+        hideAllContent();
         document.getElementById('trace-bar').classList.remove('hidden');
-        document.getElementById('content-dashboard').classList.add('hidden');
-        document.getElementById('content-summary').classList.add('hidden');
-        document.getElementById('content-notes').classList.add('hidden');
-        document.getElementById('content-history').classList.add('hidden');
         document.getElementById('content-trace').classList.remove('hidden');
-        document.getElementById('investigation-panel').classList.add('hidden');
         document.getElementById('page-title').textContent = 'Trace User Activity Mode';
         document.getElementById('page-subtitle').textContent = 'Search or view detailed timeline for a session';
         renderTraceTimeline();
@@ -53,16 +55,35 @@ function switchNav(nav) {
 
 // ===== RENDERING =====
 function severityFor(p) {
+    if (p.severity) return String(p.severity).toLowerCase();
     if (p.type === 'SECURITY_ALERT') return 'high';
     if (p.type === 'behavior_batch') return 'medium';
     return 'low';
 }
 
 function summaryFor(p) {
-    if (p.type === 'session_start') return `Browser: ${p.data?.browser?.name||'N/A'} | OS: ${p.data?.device?.platform||'N/A'}`;
+    if (p.type === 'session_start') return `Browser: ${p.data?.fingerprint?.browser?.name||p.data?.browser?.name||'N/A'} | OS: ${p.data?.fingerprint?.device?.platform||p.data?.device?.platform||'N/A'}`;
     if (p.type === 'behavior_batch') return `${p.events?.length||0} user actions recorded`;
     if (p.type === 'SECURITY_ALERT') return p.data?.details || p.data?.reason || 'Security Alert';
     if (p.type === 'login_attempt') return 'User attempted login';
+    if (p.type === 'LOGIN_SUCCESS') return 'User submitted login form';
+    if (p.type === 'LOGIN_FAILED') return p.data?.reason || 'Login failed';
+    if (p.type === 'SQL_INJECTION') return p.data?.formAction ? `Blocked at ${p.data.formAction}` : 'SQL injection attempt blocked';
+    if (p.type === 'CLICK_ACTIVITY') return `Click at (${p.data?.x ?? '-'}, ${p.data?.y ?? '-'})`;
+    if (p.type === 'MOUSE_ACTIVITY') return `Mouse move at (${p.data?.x ?? '-'}, ${p.data?.y ?? '-'})`;
+    if (p.type === 'SCROLL_ACTIVITY') return `Scroll (${p.data?.scrollX ?? 0}, ${p.data?.scrollY ?? 0})`;
+    if (p.type === 'KEYBOARD_ACTIVITY') {
+        const cat = p.data?.keyCategory || 'key';
+        const sensitive = p.data?.sensitiveField ? ' (sensitive field)' : '';
+        const count = p.data?.totalKeystrokes || '';
+        return `${cat} input #${count}${sensitive}`;
+    }
+    if (p.type === 'API_REQUEST') return `${p.data?.method || 'GET'} ${p.data?.url || ''}`.trim();
+    if (p.type === 'API_RESPONSE') return `${p.data?.status || ''} ${p.data?.url || ''}`.trim();
+    if (p.type === 'API_ERROR') return p.data?.error?.message || 'API request failed';
+    if (p.type === 'DEVTOOLS_OPENED') return 'Developer tools opened';
+    if (p.type === 'DOM_MUTATION') return `${p.data?.mutationCount || 0} DOM mutations detected`;
+    if (p.type === 'SCRIPT_INJECTION') return 'Suspicious script injection detected';
     return String(p.type||'').replace(/_/g,' ');
 }
 
@@ -186,8 +207,8 @@ function addEvent(p, animate) {
         }
     }
     updateKPIs();
-    // Update trace if viewing this session
     if (currentView === 'trace' && traceSessionId && p.sessionId === traceSessionId) renderTraceTimeline();
+    if (currentView === 'users') renderUsersView();
 }
 
 function updateKPIs() {
@@ -370,6 +391,12 @@ function renderTraceTimeline() {
             btnContainer.appendChild(btn);
             
             tbody.appendChild(tr);
+        } else if (['CLICK_ACTIVITY', 'MOUSE_ACTIVITY', 'SCROLL_ACTIVITY', 'KEYBOARD_ACTIVITY', 'API_REQUEST', 'API_RESPONSE', 'API_ERROR', 'DEVTOOLS_OPENED', 'DOM_MUTATION', 'SCRIPT_INJECTION', 'SQL_INJECTION', 'LOGIN_ATTEMPT', 'LOGIN_SUCCESS', 'LOGIN_FAILED'].includes(p.type)) {
+            const tr = document.createElement('tr');
+            const time = p.timestamp ? new Date(p.timestamp).toLocaleTimeString() : '--';
+            const label = String(p.type || 'Event').replace(/_/g, ' ');
+            tr.innerHTML = `<td class="mono">${time}</td><td><span class="event-label"><span class="event-icon">•</span> ${escapeHtml(label)}</span></td><td>${escapeHtml(summaryFor(p))}</td><td class="mono" style="font-size:0.75rem">${escapeHtml(JSON.stringify(p.data || {}))}</td><td></td>`;
+            tbody.appendChild(tr);
         } else if (p.type === 'session_start' || p.type === 'session_end') {
             const tr = document.createElement('tr');
             const time = p.timestamp ? new Date(p.timestamp).toLocaleTimeString() : '--';
@@ -413,8 +440,10 @@ function openInvestigation(alertData) {
     } else if (alertData.type === 'behavior_batch') {
         html += `<div class="inv-detail-row"><span class="label">Actions Recorded</span><span>${alertData.events?.length||0} events</span></div>`;
     } else if (alertData.type === 'session_start') {
-        html += `<div class="inv-detail-row"><span class="label">Browser</span><span>${escapeHtml(alertData.data?.browser?.name||'N/A')}</span></div>
-                 <div class="inv-detail-row"><span class="label">OS</span><span>${escapeHtml(alertData.data?.device?.platform||'N/A')}</span></div>`;
+        html += `<div class="inv-detail-row"><span class="label">Browser</span><span>${escapeHtml(alertData.data?.fingerprint?.browser?.name||alertData.data?.browser?.name||'N/A')}</span></div>
+                 <div class="inv-detail-row"><span class="label">OS</span><span>${escapeHtml(alertData.data?.fingerprint?.device?.platform||alertData.data?.device?.platform||'N/A')}</span></div>`;
+    } else {
+        html += `<div class="inv-detail-row"><span class="label">Summary</span><span>${escapeHtml(summaryFor(alertData))}</span></div>`;
     }
     
     html += `<div class="inv-detail-row"><span class="label">Session ID</span><span class="mono">${escapeHtml(alertData.sessionId||'--')}</span></div>`;
@@ -500,8 +529,11 @@ function showFinalSummary(action, note) {
             if (conf.includes('High')) calculatedScore += 40;
             else calculatedScore += 25;
         }
-        if (e.type === 'behavior_batch') {
-            calculatedScore += (e.events?.length || 0) * 0.5;
+        if (['CLICK_ACTIVITY', 'MOUSE_ACTIVITY', 'SCROLL_ACTIVITY', 'KEYBOARD_ACTIVITY'].includes(e.type)) {
+            calculatedScore += 1;
+        }
+        if (typeof e.riskScore === 'number') {
+            calculatedScore = Math.max(calculatedScore, e.riskScore);
         }
     });
     if (selectedFlag === 'Bot Pattern') calculatedScore += 30;
@@ -538,7 +570,7 @@ function showFinalSummary(action, note) {
         const tr = document.createElement('tr');
         if(p.type==='SECURITY_ALERT') tr.classList.add('alert-row');
         const time = p.timestamp ? new Date(p.timestamp).toLocaleTimeString() : '--';
-        const typeName = p.type === 'SECURITY_ALERT' ? 'Security Alert' : p.type === 'behavior_batch' ? 'Behavior' : p.type === 'session_start' ? 'Session Start' : p.type;
+        const typeName = p.type === 'SECURITY_ALERT' ? 'Security Alert' : p.type === 'behavior_batch' ? 'Behavior' : p.type === 'session_start' ? 'Session Start' : String(p.type || 'event').replace(/_/g, ' ');
         const statusIcon = p.type === 'SECURITY_ALERT' ? `<span class="badge badge-high">HIGH</span> ${selectedFlag ? `<span class="badge badge-info">${escapeHtml(selectedFlag)}</span>` : ''}` : '<span class="status-check">✓</span>';
         tr.innerHTML = `<td class="timeline-dot-col"><span class="dot-indicator ${p.type==='SECURITY_ALERT'?'dot-red':'dot-blue'}"></span></td><td class="mono">${time}</td><td>${escapeHtml(typeName)}</td><td style="font-size:0.75rem">${escapeHtml(summaryFor(p))}</td><td>${statusIcon}</td>`;
         stbody.appendChild(tr);
@@ -836,3 +868,171 @@ document.addEventListener('click', (e) => {
         menu.classList.add('hidden');
     }
 });
+
+// ===== ACTIVE USERS =====
+let selectedUserIp = null;
+
+function getIpUserMap() {
+    const ipMap = new Map();
+    allEvents.forEach(p => {
+        const ip = p.ip || 'Unknown';
+        if (ip === 'Unknown') return;
+        if (!ipMap.has(ip)) {
+            ipMap.set(ip, {
+                ip,
+                sessions: new Set(),
+                events: [],
+                alerts: 0,
+                firstSeen: p.timestamp,
+                lastSeen: p.timestamp,
+                maxSeverity: 'low',
+                riskScore: 0,
+                origins: new Set()
+            });
+        }
+        const user = ipMap.get(ip);
+        user.events.push(p);
+        if (p.sessionId) user.sessions.add(p.sessionId);
+        if (p.origin) user.origins.add(p.origin);
+        if (p.timestamp < user.firstSeen) user.firstSeen = p.timestamp;
+        if (p.timestamp > user.lastSeen) user.lastSeen = p.timestamp;
+        if (p.type === 'SECURITY_ALERT') user.alerts++;
+
+        const sev = severityFor(p);
+        if (sev === 'high' || user.maxSeverity === 'high') user.maxSeverity = 'high';
+        else if (sev === 'medium' && user.maxSeverity !== 'high') user.maxSeverity = 'medium';
+
+        if (typeof p.riskScore === 'number' && p.riskScore > user.riskScore) user.riskScore = p.riskScore;
+    });
+    return ipMap;
+}
+
+function renderUsersView() {
+    const grid = document.getElementById('users-grid');
+    const detailPanel = document.getElementById('user-detail-panel');
+    if (!grid) return;
+
+    const ipMap = getIpUserMap();
+    const users = Array.from(ipMap.values()).sort((a, b) => {
+        if (b.alerts !== a.alerts) return b.alerts - a.alerts;
+        return b.events.length - a.events.length;
+    });
+
+    // Update stats
+    document.getElementById('users-total-count').textContent = users.length;
+    const totalSessions = users.reduce((sum, u) => sum + u.sessions.size, 0);
+    document.getElementById('users-total-sessions').textContent = totalSessions;
+    const flaggedCount = users.filter(u => u.alerts > 0).length;
+    document.getElementById('users-flagged-count').textContent = flaggedCount;
+
+    if (selectedUserIp && ipMap.has(selectedUserIp)) {
+        grid.classList.add('hidden');
+        detailPanel.classList.remove('hidden');
+        renderUserDetail(ipMap.get(selectedUserIp));
+        return;
+    }
+
+    grid.classList.remove('hidden');
+    detailPanel.classList.add('hidden');
+    grid.innerHTML = '';
+
+    if (users.length === 0) {
+        grid.innerHTML = `<div class="users-empty">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.4; margin-bottom:1rem;"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+            <p>No user activity detected yet.<br>Interact with a monitored site to see connected IPs here.</p>
+        </div>`;
+        return;
+    }
+
+    users.forEach(user => {
+        const card = document.createElement('div');
+        card.className = `user-card ${user.alerts > 0 ? 'user-card-flagged' : ''}`;
+        card.onclick = () => openUserDetail(user.ip);
+
+        const sevBadge = user.maxSeverity === 'high' ? 'badge-high' : user.maxSeverity === 'medium' ? 'badge-medium' : 'badge-low';
+        const riskLevel = user.maxSeverity.toUpperCase();
+        const lastSeenStr = user.lastSeen ? new Date(user.lastSeen).toLocaleTimeString() : '--';
+        const originList = Array.from(user.origins).join(', ');
+
+        card.innerHTML = `
+            <div class="user-card-top">
+                <div class="user-card-icon ${user.alerts > 0 ? 'user-card-icon-danger' : ''}">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </div>
+                <div class="user-card-ip-group">
+                    <div class="user-card-ip">${escapeHtml(user.ip)}</div>
+                    <div class="user-card-origin">${escapeHtml(originList)}</div>
+                </div>
+                <span class="badge ${sevBadge}" style="margin-left:auto;">${riskLevel}</span>
+            </div>
+            <div class="user-card-stats">
+                <div class="user-card-stat">
+                    <span class="user-card-stat-val">${user.sessions.size}</span>
+                    <span class="user-card-stat-lbl">Sessions</span>
+                </div>
+                <div class="user-card-stat">
+                    <span class="user-card-stat-val">${user.events.length}</span>
+                    <span class="user-card-stat-lbl">Events</span>
+                </div>
+                <div class="user-card-stat">
+                    <span class="user-card-stat-val ${user.alerts > 0 ? 'red' : ''}">${user.alerts}</span>
+                    <span class="user-card-stat-lbl">Alerts</span>
+                </div>
+                <div class="user-card-stat">
+                    <span class="user-card-stat-val">${lastSeenStr}</span>
+                    <span class="user-card-stat-lbl">Last Seen</span>
+                </div>
+            </div>
+        `;
+        grid.appendChild(card);
+    });
+}
+
+function openUserDetail(ip) {
+    selectedUserIp = ip;
+    renderUsersView();
+}
+
+function closeUserDetail() {
+    selectedUserIp = null;
+    renderUsersView();
+}
+
+function renderUserDetail(user) {
+    document.getElementById('user-detail-ip').textContent = user.ip;
+    document.getElementById('user-detail-sessions').textContent = `${user.sessions.size} session${user.sessions.size !== 1 ? 's' : ''}`;
+    document.getElementById('user-detail-events').textContent = `${user.events.length} events`;
+    document.getElementById('user-detail-first-seen').textContent = `First seen: ${user.firstSeen ? new Date(user.firstSeen).toLocaleTimeString() : '--'}`;
+
+    const badge = document.getElementById('user-detail-risk-badge');
+    const level = user.maxSeverity === 'high' ? 'HIGH' : user.maxSeverity === 'medium' ? 'MEDIUM' : 'LOW';
+    badge.textContent = level;
+    badge.className = `badge ${level === 'HIGH' ? 'badge-high' : level === 'MEDIUM' ? 'badge-medium' : 'badge-low'}`;
+
+    const tbody = document.getElementById('user-detail-body');
+    tbody.innerHTML = '';
+
+    const events = user.events.slice().sort((a, b) => {
+        const ta = new Date(a.timestamp || 0).getTime();
+        const tb = new Date(b.timestamp || 0).getTime();
+        return tb - ta;
+    });
+
+    events.forEach(p => {
+        const tr = document.createElement('tr');
+        if (p.type === 'SECURITY_ALERT') tr.classList.add('alert-row');
+        const time = p.timestamp ? new Date(p.timestamp).toLocaleTimeString() : '--';
+        const sev = severityFor(p);
+        const sevClass = sev === 'high' ? 'badge-high' : sev === 'medium' ? 'badge-medium' : 'badge-low';
+        const typeName = String(p.type || 'unknown').replace(/_/g, ' ');
+
+        tr.innerHTML = `
+            <td class="mono">${time}</td>
+            <td><span class="badge badge-info">${escapeHtml(typeName)}</span></td>
+            <td class="mono clickable trace-link" onclick="enterTraceMode('${escapeHtml(p.sessionId || '')}'); event.stopPropagation();">${escapeHtml(p.sessionId || '--')}</td>
+            <td><span class="badge ${sevClass}">${sev}</span></td>
+            <td style="font-size:0.8rem">${escapeHtml(summaryFor(p))}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}

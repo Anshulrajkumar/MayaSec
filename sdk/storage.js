@@ -1,45 +1,45 @@
-/**
- * Browser storage wrappers for the MayaSec SDK.
- */
+import { safeJsonParse } from './utils.js';
 
 /**
- * Saves a value to localStorage.
- *
- * @param {string} key Storage key.
- * @param {unknown} value Serializable value.
- * @returns {void}
+ * Browser storage abstraction used by the MayaSec SDK.
  */
-export function save(key, value) {
-  localStorage.setItem(key, JSON.stringify(value));
+export class StorageService {
+  /**
+   * @param {Storage|null} storage
+   */
+  constructor(storage = typeof window !== 'undefined' ? window.localStorage : null) {
+    this.storage = storage;
+  }
+
+  /**
+   * @param {string} key
+   * @param {unknown} value
+   * @returns {void}
+   */
+  set(key, value) {
+    if (!this.storage) return;
+    this.storage.setItem(key, JSON.stringify(value));
+  }
+
+  /**
+   * @template T
+   * @param {string} key
+   * @param {T} fallback
+   * @returns {T}
+   */
+  get(key, fallback = /** @type {T} */ (null)) {
+    if (!this.storage) return fallback;
+    return /** @type {T} */ (safeJsonParse(this.storage.getItem(key), fallback));
+  }
+
+  /**
+   * @param {string} key
+   * @returns {void}
+   */
+  remove(key) {
+    if (!this.storage) return;
+    this.storage.removeItem(key);
+  }
 }
 
-/**
- * Loads a value from localStorage.
- *
- * @param {string} key Storage key.
- * @returns {unknown} Parsed stored value, or null when unavailable.
- */
-export function load(key) {
-  const value = localStorage.getItem(key);
-  return value ? JSON.parse(value) : null;
-}
-
-/**
- * Removes a value from localStorage.
- *
- * @param {string} key Storage key.
- * @returns {void}
- */
-export function remove(key) {
-  localStorage.removeItem(key);
-}
-
-/**
- * Clears localStorage.
- *
- * @returns {void}
- */
-export function clear() {
-  localStorage.clear();
-}
-
+export const storage = new StorageService();

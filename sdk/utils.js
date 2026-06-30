@@ -1,64 +1,133 @@
 /**
- * Shared utility placeholders for the MayaSec SDK.
+ * Shared utilities for the MayaSec SDK.
  */
 
 /**
- * Generates a basic UUID value.
+ * Generates a UUID with a browser-safe fallback.
  *
- * @returns {string} UUID value.
+ * @returns {string}
  */
 export function generateUUID() {
-  return crypto.randomUUID();
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+
+  return `ms-${Math.random().toString(16).slice(2)}-${Date.now().toString(16)}`;
 }
 
 /**
- * Returns the current Unix timestamp in milliseconds.
+ * Returns the current time as an ISO timestamp.
  *
- * @returns {number} Current timestamp.
+ * @returns {string}
  */
-export function timestamp() {
+export function nowIso() {
+  return new Date().toISOString();
+}
+
+/**
+ * Returns the current time in milliseconds.
+ *
+ * @returns {number}
+ */
+export function nowMs() {
   return Date.now();
 }
 
 /**
- * Produces a placeholder hash value.
+ * Creates a stable hash from a string value.
  *
- * @param {unknown} value Value to hash later.
- * @returns {string} Placeholder hash output.
+ * @param {string} value
+ * @returns {string}
  */
-export function hash(value) {
-  return `mock-hash:${String(value)}`;
+export function hashString(value) {
+  let hash = 0;
+
+  for (let index = 0; index < value.length; index += 1) {
+    hash = ((hash << 5) - hash) + value.charCodeAt(index);
+    hash |= 0;
+  }
+
+  return Math.abs(hash).toString(16);
 }
 
 /**
- * Creates a placeholder debounced function wrapper.
+ * Creates a throttled function wrapper.
  *
- * @param {Function} callback Function to wrap.
- * @returns {Function} Wrapped function.
+ * @template {(...args: any[]) => void} T
+ * @param {T} callback
+ * @param {number} waitMs
+ * @returns {T}
  */
-export function debounce(callback) {
-  return (...args) => callback(...args);
-}
+export function throttle(callback, waitMs) {
+  let lastRun = 0;
 
-/**
- * Creates a placeholder throttled function wrapper.
- *
- * @param {Function} callback Function to wrap.
- * @returns {Function} Wrapped function.
- */
-export function throttle(callback) {
-  return (...args) => callback(...args);
-}
-
-/**
- * Waits for the requested number of milliseconds.
- *
- * @param {number} milliseconds Delay duration.
- * @returns {Promise<void>} Promise that resolves after the delay.
- */
-export function sleep(milliseconds) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, milliseconds);
+  return /** @type {T} */ ((...args) => {
+    const now = nowMs();
+    if ((now - lastRun) < waitMs) return;
+    lastRun = now;
+    callback(...args);
   });
 }
 
+/**
+ * Creates a debounced function wrapper.
+ *
+ * @template {(...args: any[]) => void} T
+ * @param {T} callback
+ * @param {number} waitMs
+ * @returns {T}
+ */
+export function debounce(callback, waitMs) {
+  let timeoutId = null;
+
+  return /** @type {T} */ ((...args) => {
+    if (timeoutId) clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => callback(...args), waitMs);
+  });
+}
+
+/**
+ * Returns a normalized hostname for the current page.
+ *
+ * @returns {string}
+ */
+export function currentHostname() {
+  if (typeof window === 'undefined') return 'unknown';
+  return window.location.hostname || 'unknown';
+}
+
+/**
+ * Safely parses JSON.
+ *
+ * @param {string|null} value
+ * @param {unknown} fallback
+ * @returns {unknown}
+ */
+export function safeJsonParse(value, fallback = null) {
+  if (!value) return fallback;
+
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+}
+
+/**
+ * Builds a shallow serializable error payload.
+ *
+ * @param {unknown} error
+ * @returns {{ message: string, stack?: string }}
+ */
+export function serializeError(error) {
+  if (error instanceof Error) {
+    return {
+      message: error.message,
+      stack: error.stack
+    };
+  }
+
+  return {
+    message: String(error)
+  };
+}

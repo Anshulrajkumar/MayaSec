@@ -4,7 +4,7 @@ let allEvents = [], currentFilter = 'all', alertCount = 0;
 const uniqueSessions = new Set(), siteSessionMap = {}, siteAlertMap = {}, knownSites = new Map();
 let authMode = 'login';
 let evtSource;
-let currentView = 'dashboard'; // dashboard | trace | summary
+let currentView = 'dashboard'; // dashboard | trace | summary | users | notes | history
 let traceSessionId = null;
 let selectedFlag = null;
 let investigationAlert = null;
@@ -213,10 +213,10 @@ function updateSiteDropdown() {
     const allSites = new Set(userDomains || []);
     knownSites.forEach((site, name) => allSites.add(name));
     
-    if (allSites.size === 0) {
-        sel.innerHTML = '<option value="all">Choose website</option>';
-        return;
-    }
+    // Always add an "All Sites" option first
+    const allOpt = document.createElement('option');
+    allOpt.value = 'all'; allOpt.textContent = 'All Sites';
+    sel.appendChild(allOpt);
 
     allSites.forEach((name) => {
         const opt = document.createElement('option');
@@ -224,13 +224,9 @@ function updateSiteDropdown() {
         sel.appendChild(opt);
     });
     
-    if (currentFilter === 'all' || !allSites.has(currentFilter)) {
-        if (allSites.size > 0) {
-            currentFilter = allSites.values().next().value;
-            if (typeof renderTable === 'function') renderTable();
-        } else {
-            currentFilter = 'all';
-        }
+    if (currentFilter !== 'all' && !allSites.has(currentFilter)) {
+        currentFilter = 'all';
+        if (typeof renderTable === 'function') renderTable();
     }
     
     sel.value = currentFilter;

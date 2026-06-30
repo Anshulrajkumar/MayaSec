@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MayaSec Command Center</title>
     <meta name="description" content="MayaSec Security Command Center - Real-time browser security monitoring dashboard">
-    <link rel="stylesheet" href="styles.css?v=2">
+    <link rel="stylesheet" href="styles.css?v=3">
 </head>
 <body>
 
@@ -69,6 +69,10 @@
             <div class="nav-item active" data-nav="dashboard" onclick="switchNav('dashboard')">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
                 Dashboard
+            </div>
+            <div class="nav-item" data-nav="users" onclick="switchNav('users')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+                Active Users
             </div>
             <div class="nav-item" data-nav="history" onclick="switchNav('history')">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
@@ -300,6 +304,52 @@
                         <tr><td colspan="6" style="text-align:center;padding:2rem;">No analysis sessions saved yet. Start a session from the top bar to record history.</td></tr>
                     </tbody>
                 </table>
+            </div>
+        </div>
+
+        <!-- Active Users Content (hidden) -->
+        <div class="content hidden" id="content-users">
+            <div class="users-header">
+                <div class="users-stats">
+                    <div class="users-stat-item">
+                        <span class="users-stat-value" id="users-total-count">0</span>
+                        <span class="users-stat-label">Connected IPs</span>
+                    </div>
+                    <div class="users-stat-item">
+                        <span class="users-stat-value" id="users-total-sessions">0</span>
+                        <span class="users-stat-label">Active Sessions</span>
+                    </div>
+                    <div class="users-stat-item">
+                        <span class="users-stat-value red" id="users-flagged-count">0</span>
+                        <span class="users-stat-label">Flagged Users</span>
+                    </div>
+                </div>
+            </div>
+            <div class="users-grid" id="users-grid"></div>
+            <div class="user-detail-panel hidden" id="user-detail-panel">
+                <div class="user-detail-header">
+                    <button class="trace-back-btn" onclick="closeUserDetail()">←</button>
+                    <div class="user-detail-info">
+                        <div class="user-detail-ip" id="user-detail-ip">--</div>
+                        <div class="user-detail-meta">
+                            <span id="user-detail-sessions">0 sessions</span>
+                            <span class="user-detail-divider">•</span>
+                            <span id="user-detail-events">0 events</span>
+                            <span class="user-detail-divider">•</span>
+                            <span id="user-detail-first-seen">--</span>
+                        </div>
+                    </div>
+                    <div id="user-detail-risk-badge" class="badge badge-low">LOW</div>
+                </div>
+                <div class="table-section" style="border:none; box-shadow:none;">
+                    <table><thead><tr>
+                        <th style="width:12%">Time</th>
+                        <th style="width:15%">Type</th>
+                        <th style="width:18%">Session ID</th>
+                        <th style="width:12%">Severity</th>
+                        <th>Summary</th>
+                    </tr></thead><tbody id="user-detail-body"></tbody></table>
+                </div>
             </div>
         </div>
     </div>

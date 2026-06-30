@@ -1,5 +1,58 @@
 # MayaSec - Browser-Side Security Monitoring SDK
 
+## v2 Architecture
+
+MayaSec now uses an event-driven architecture across the SDK and backend.
+
+```text
+Incoming Event
+  -> Validation
+  -> Normalization
+  -> Rules Engine
+  -> Risk Engine
+  -> Store
+  -> Broadcast Dashboard
+  -> Future AI Engine
+```
+
+The browser SDK is now organized as:
+
+```text
+sdk/
+  index.js
+  config.js
+  logger.js
+  storage.js
+  utils.js
+  transport.js
+  events.js
+  session.js
+  fingerprint.js
+  behaviour.js
+  auth.js
+  api.js
+  monitor.js
+  rules.js
+  risk.js
+  deception.js
+```
+
+Every module emits standardized security events through the Event Bus:
+
+```javascript
+{
+  id: "",
+  sessionId: "",
+  websiteId: "",
+  timestamp: "",
+  category: "",
+  event: "",
+  severity: "",
+  risk: 0,
+  metadata: {}
+}
+```
+
 **MayaSec** is a lightweight, zero-config JavaScript SDK that adds an invisible security layer to any website. It silently monitors user behavior, fingerprints devices, detects bots, and blocks attacks like SQL Injection — all from the browser, without touching your backend code.
 
 Drop one script tag into your HTML. That's it. Your website is now protected and monitored in real-time through the **MayaSec Command Center**.

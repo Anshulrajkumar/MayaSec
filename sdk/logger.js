@@ -1,44 +1,44 @@
-/**
- * Lightweight browser console logging wrapper for the MayaSec SDK.
- */
+import { getConfig } from './config.js';
 
 /**
- * Logs an informational message.
- *
- * @param {...unknown} args Values to log.
- * @returns {void}
+ * Lightweight logger for the MayaSec SDK.
  */
-export function info(...args) {
-  console.info(...args);
+export class Logger {
+  /**
+   * @param {string} namespace
+   */
+  constructor(namespace = 'MayaSec') {
+    this.namespace = namespace;
+  }
+
+  /**
+   * @param {'debug'|'info'|'warn'|'error'} level
+   * @param {...unknown} args
+   * @returns {void}
+   */
+  log(level, ...args) {
+    const config = getConfig();
+    if (level === 'debug' && !config.debug) return;
+
+    const consoleMethod = console[level] || console.log;
+    consoleMethod(`[${this.namespace}]`, ...args);
+  }
+
+  debug(...args) {
+    this.log('debug', ...args);
+  }
+
+  info(...args) {
+    this.log('info', ...args);
+  }
+
+  warn(...args) {
+    this.log('warn', ...args);
+  }
+
+  error(...args) {
+    this.log('error', ...args);
+  }
 }
 
-/**
- * Logs a warning message.
- *
- * @param {...unknown} args Values to log.
- * @returns {void}
- */
-export function warn(...args) {
-  console.warn(...args);
-}
-
-/**
- * Logs an error message.
- *
- * @param {...unknown} args Values to log.
- * @returns {void}
- */
-export function error(...args) {
-  console.error(...args);
-}
-
-/**
- * Logs a debug message.
- *
- * @param {...unknown} args Values to log.
- * @returns {void}
- */
-export function debug(...args) {
-  console.debug(...args);
-}
-
+export const logger = new Logger();

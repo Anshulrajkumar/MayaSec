@@ -7,7 +7,15 @@ const defaultConfig = {
   appId: null,
   endpoint: null,
   debug: false,
-  environment: 'development'
+  environment: 'production',
+  websiteId: null,
+  flushIntervalMs: 3000,
+  maxEventHistory: 250,
+  behaviourAlertThreshold: 10,
+  rapidClickThreshold: 8,
+  sessionIdleTimeoutMs: 30 * 60 * 1000,
+  sessionStorageKey: 'mayasec:session',
+  sessionActivityKey: 'mayasec:last-activity'
 };
 
 let currentConfig = { ...defaultConfig };
@@ -23,6 +31,8 @@ export function setConfig(config = {}) {
     ...currentConfig,
     ...config
   };
+
+  return getConfig();
 }
 
 /**
@@ -34,3 +44,4 @@ export function getConfig() {
   return { ...currentConfig };
 }
 
+export { defaultConfig };

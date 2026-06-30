@@ -1,63 +1,147 @@
-import { startTracking, getEventsAndClear } from './behaviour.js';
-import { generateFingerprint } from './fingerprint.js';
-import { sendEvent } from './transport.js';
-import { startAuthInterception } from './auth.js';
+import { apiMonitor } from './api.js';
+import { authMonitor } from './auth.js';
+import { behaviourTracker } from './behaviour.js';
+import { setConfig, getConfig } from './config.js';
+import { emitEvent, subscribe, unsubscribe, getEventHistory } from './events.js';
+import { fingerprintService } from './fingerprint.js';
+import { logger } from './logger.js';
+import { browserMonitor } from './monitor.js';
+import { riskEngine } from './risk.js';
+import { rulesEngine } from './rules.js';
+import { sessionManager } from './session.js';
+import { transportService } from './transport.js';
+import { currentHostname } from './utils.js';
 
-export const MayaSec = {
-  sessionId: null,
-  intervalId: null,
-  apiKey: null,
+class MayaSecSDK {
+  constructor() {
+    this.started = false;
+    this.rulesSubscriptionId = null;
+    this.riskSubscriptionId = null;
+  }
 
   init(config = {}) {
-    this.apiKey = config.apiKey || null;
-    console.log('MayaSec SDK initialized');
-    const fingerprint = generateFingerprint();
-    this.sessionId = fingerprint.id;
-    
-    // Send initial fingerprint
-    sendEvent({
-      type: 'session_start',
-      sessionId: this.sessionId,
-      apiKey: this.apiKey,
-      data: fingerprint,
-      timestamp: Date.now()
+    const resolvedConfig = setConfig({
+      ...config,
+      websiteId: config.websiteId || config.appId || currentHostname()
     });
-  },
+
+    const session = sessionManager.startOrRestoreSession();
+    const fingerprint = fingerprintService.generateFingerprint();
+
+    emitEvent({
+      sessionId: session.id,
+      websiteId: resolvedConfig.websiteId,
+      category: 'session',
+      event: 'SESSION_STARTED',
+      severity: 'LOW',
+      metadata: {
+        fingerprint,
+        session
+      }
+    });
+
+    emitEvent({
+      sessionId: session.id,
+      websiteId: resolvedConfig.websiteId,
+      category: 'navigation',
+      event: 'PAGE_VIEW',
+      severity: 'LOW',
+      metadata: {
+        path: window.location.pathname,
+        href: window.location.href,
+        title: document.title
+      }
+    });
+
+    logger.info('SDK initialized', { websiteId: resolvedConfig.websiteId, sessionId: session.id });
+    return this;
+  }
 
   start() {
-    startTracking();
-    startAuthInterception(this.sessionId, this.apiKey);
-    
-    const self = this;
-    // Flush events every 3 seconds
-    this.intervalId = setInterval(() => {
-      const events = getEventsAndClear();
-      if (events.length > 0) {
-        sendEvent({
-          type: 'behavior_batch',
-          sessionId: self.sessionId,
-          apiKey: self.apiKey,
-          events: events,
-          timestamp: Date.now()
-        });
+    if (this.started) return;
+    this.started = true;
+
+    const history = getEventHistory().slice().reverse();
+
+    this.rulesSubscriptionId = subscribe((event) => {
+      if (['SECURITY_ALERT', 'SQL_INJECTION', 'RAPID_CLICKING', 'HEADLESS_BROWSER', 'BOT_ACTIVITY', 'SUSPICIOUS_BEHAVIOUR'].includes(event.event)) {
+        return;
       }
-    }, 3000);
-    console.log('MayaSec SDK started monitoring');
-  },
+
+      rulesEngine.process(event);
+    });
+
+    this.riskSubscriptionId = subscribe((event) => {
+      const risk = riskEngine.applyEvent(event);
+      if (event.event === 'SECURITY_ALERT') {
+        logger.warn('Security alert emitted', { sessionId: event.sessionId, risk });
+      }
+    });
+
+    history.forEach((event) => {
+      if (!['SECURITY_ALERT', 'SQL_INJECTION', 'RAPID_CLICKING', 'HEADLESS_BROWSER', 'BOT_ACTIVITY', 'SUSPICIOUS_BEHAVIOUR'].includes(event.event)) {
+        rulesEngine.process(event);
+      }
+      riskEngine.applyEvent(event);
+    });
+
+    transportService.start();
+    behaviourTracker.start();
+    authMonitor.start();
+    apiMonitor.start();
+    browserMonitor.start();
+    sessionManager.touch();
+
+    logger.info('SDK started', getConfig());
+  }
 
   stop() {
-    clearInterval(this.intervalId);
-    console.log('MayaSec SDK stopped');
-  },
+    if (!this.started) return;
+    this.started = false;
 
-  version() {
-    return '1.0.0';
-  },
+    behaviourTracker.stop();
+    authMonitor.stop();
+    apiMonitor.stop();
+    browserMonitor.stop();
+    transportService.stop();
+
+    if (this.rulesSubscriptionId) unsubscribe(this.rulesSubscriptionId);
+    if (this.riskSubscriptionId) unsubscribe(this.riskSubscriptionId);
+    this.rulesSubscriptionId = null;
+    this.riskSubscriptionId = null;
+  }
 
   destroy() {
     this.stop();
+    sessionManager.expireSession();
   }
-};
+
+  version() {
+    return '2.0.0';
+  }
+
+  emitEvent(payload) {
+    return emitEvent({
+      ...payload,
+      sessionId: payload.sessionId || sessionManager.getSession()?.id || '',
+      websiteId: payload.websiteId || getConfig().websiteId
+    });
+  }
+
+  subscribe(listener) {
+    return subscribe(listener);
+  }
+
+  unsubscribe(id) {
+    unsubscribe(id);
+  }
+
+  getEventHistory() {
+    return getEventHistory();
+  }
+}
+
+export const MayaSec = new MayaSecSDK();
 
 if (typeof window !== 'undefined') {
   window.MayaSec = MayaSec;
