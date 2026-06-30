@@ -12,6 +12,7 @@
 <!-- ===== LOGIN VIEW ===== -->
 <div id="view-login" class="login-page">
     <div class="login-card">
+        <img src="logo.png?v=2" alt="MayaSec Logo" style="max-height: 80px; width: auto; max-width: 100px; margin: 0 auto 1rem auto; display: block; border-radius: 12px;">
         <h1>MayaSec</h1>
         <div class="login-version">Security Command Center</div>
         <div class="auth-mode-switch">
@@ -64,9 +65,12 @@
 <div id="view-dashboard" class="app hidden">
     <!-- Sidebar -->
     <div class="sidebar">
-        <div class="sidebar-brand">
-            <h1>MayaSec</h1>
-            <span>Command Center</span>
+        <div class="sidebar-brand" style="display: flex; align-items: center; gap: 12px; padding: 10px 0;">
+            <img src="logo.png?v=2" alt="MayaSec" style="width: 36px; height: 36px; border-radius: 8px;">
+            <div style="display: flex; flex-direction: column;">
+                <h1>MayaSec</h1>
+                <span>Command Center</span>
+            </div>
         </div>
         <div class="sidebar-nav">
             <div class="nav-item active" data-nav="dashboard" onclick="switchNav('dashboard')">

@@ -1,4 +1,7 @@
-# MayaSec - Browser-Side Security Monitoring SDK
+<div align="center">
+  <img src="logo.png" alt="MayaSec Logo" width="120" style="border-radius: 20px; margin-bottom: 20px;" />
+  <h1>MayaSec - Browser-Side Security Monitoring SDK</h1>
+</div>
 
 ## v2 Architecture
 

@@ -570,24 +570,24 @@ tr.alert-row .event-icon { color: var(--danger); }
 
 /* Auth / Onboard */
 .login-page, .onboard-page {
-  background: var(--bg); display: flex; align-items: center; justify-content: center; height: 100vh;
+  background: var(--bg); display: flex; align-items: center; justify-content: center; min-height: 100vh; height: auto; padding: 2rem 1rem;
 }
 .login-card, .onboard-card {
   background: var(--surface);
-  border-radius: 24px; padding: 3rem; width: 460px;
+  border-radius: 20px; padding: 2rem; width: 380px;
   box-shadow: 20px 20px 60px rgba(0,0,0,0.15), -20px -20px 60px rgba(255,255,255,0.8);
   text-align: center; border: 1px solid var(--border-light);
 }
-.login-card h1 { font-size: 2rem; font-weight: 800; color: var(--text); letter-spacing: -0.05em; text-shadow: 0 1px 0 #fff; margin-bottom: 8px;}
+.login-card h1 { font-size: 1.75rem; font-weight: 800; color: var(--text); letter-spacing: -0.05em; text-shadow: 0 1px 0 #fff; margin-bottom: 6px;}
 .auth-input {
-  width: 100%; padding: 14px 16px; margin-bottom: 16px;
+  width: 100%; padding: 12px 14px; margin-bottom: 14px;
   background: var(--surface); border: none; border-radius: 8px;
-  box-shadow: var(--shadow-recessed); font-family: var(--font-mono); font-size: 0.9rem;
+  box-shadow: var(--shadow-recessed); font-family: var(--font-mono); font-size: 0.85rem;
   color: var(--text); outline: none;
 }
 .auth-input:focus { box-shadow: var(--shadow-recessed), 0 0 0 2px var(--accent); }
 .auth-btn { 
-  width: 100%; padding: 14px; font-size: 0.9rem; margin-bottom: 16px;
+  width: 100%; padding: 12px; font-size: 0.85rem; margin-bottom: 14px;
   background: var(--accent); color: var(--accent-fg); border: none; border-radius: 8px;
   font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; cursor: pointer;
   font-family: var(--font-sans);
@@ -598,8 +598,8 @@ tr.alert-row .event-icon { color: var(--danger); }
 .auth-btn:hover { filter: brightness(1.1); }
 .auth-btn:active { box-shadow: inset 4px 4px 8px rgba(0,0,0,0.2), inset -4px -4px 8px rgba(255,255,255,0.2); transform: translateY(2px); }
 .auth-btn:disabled { opacity: 0.5; cursor: not-allowed; filter: none; transform: none; }
-.login-card .login-version { font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1.5rem; }
-.login-card p { color: var(--text-dim); font-size: 0.85rem; margin-bottom: 1.5rem; }
+.login-card .login-version { font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+.login-card p { color: var(--text-dim); font-size: 0.8rem; margin-bottom: 1rem; }
 
 /* Fixes for AI Summary specifically */
 .ai-summary-btn {
