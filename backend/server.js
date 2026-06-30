@@ -67,7 +67,7 @@ function validateRuntimeConfig() {
   const missing = [];
   if (!supabaseUrl) missing.push('SUPABASE_URL');
   if (!supabaseAnonKey) missing.push('SUPABASE_ANON_KEY');
-  if (!supabaseServiceRoleKey) missing.push('SUPABASE_SERVICE_ROLE_KEY');
+  // if (!supabaseServiceRoleKey) missing.push('SUPABASE_SERVICE_ROLE_KEY');
   if (isProduction && !appOrigin) missing.push('APP_ORIGIN');
 
   if (missing.length > 0) {
@@ -182,11 +182,12 @@ async function callSupabaseAuth(pathname, { method = 'GET', body, accessToken } 
 }
 
 async function callSupabaseRest(pathname, { method = 'GET', body, prefer, headers = {} } = {}) {
-  if (!supabaseUrl || !supabaseServiceRoleKey) {
+  const keyToUse = supabaseServiceRoleKey || supabaseAnonKey;
+  if (!supabaseUrl || !keyToUse) {
     return {
       ok: false,
       status: 500,
-      data: { error: 'Supabase database is not configured. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.' }
+      data: { error: 'Supabase database is not configured. Set SUPABASE_URL and SUPABASE_ANON_KEY.' }
     };
   }
 
@@ -194,8 +195,8 @@ async function callSupabaseRest(pathname, { method = 'GET', body, prefer, header
     const response = await fetch(`${supabaseUrl}/rest/v1/${pathname}`, {
       method,
       headers: {
-        apikey: supabaseServiceRoleKey,
-        authorization: `Bearer ${supabaseServiceRoleKey}`,
+        apikey: keyToUse,
+        authorization: `Bearer ${keyToUse}`,
         'content-type': 'application/json',
         ...(prefer ? { Prefer: prefer } : {}),
         ...headers
@@ -402,6 +403,7 @@ app.post('/api/auth/login', async (req, res) => {
 app.get('/api/auth/google', (req, res) => {
   const redirectTo = appOrigin || `http://localhost:${port}`;
   const url = `${supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectTo + '/api/auth/callback')}`;
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.redirect(url);
 });
 
@@ -605,6 +607,16 @@ app.get('/api/sites', requireAuth, async (req, res) => {
   }
 });
 
+app.options('/api/ingest', (req, res) => {
+  res.set({
+    'Access-Control-Allow-Origin': req.headers.origin || '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Credentials': 'true'
+  });
+  res.status(204).end();
+});
+
 app.post('/api/ingest', async (req, res) => {
   // Set CORS headers manually for cross-origin SDK requests (sendBeacon uses credentials: include)
   res.set({
@@ -623,7 +635,7 @@ app.post('/api/ingest', async (req, res) => {
   if (!apiKey) return res.status(401).json({ error: 'Missing API key' });
 
   const { origin, siteName, hostname } = siteFromRequest(req);
-  payload.origin = siteName;
+  payload.origin = hostname;
   payload._apiKey = apiKey;
 
   let userRecord;
@@ -644,10 +656,10 @@ app.post('/api/ingest', async (req, res) => {
     }
   }
 
-  const siteKey = `${siteName}_${apiKey}`;
+  const siteKey = `${hostname}_${apiKey}`;
   if (!connectedSites.has(siteKey)) {
     connectedSites.set(siteKey, {
-      name: siteName,
+      name: hostname,
       url: origin,
       apiKey,
       eventCount: 0,
@@ -672,7 +684,7 @@ app.post('/api/ingest', async (req, res) => {
       const alertPayload = {
         type: 'SECURITY_ALERT',
         sessionId: payload.sessionId,
-        origin: siteName,
+        origin: hostname,
         _apiKey: apiKey,
         data: threat,
         timestamp: Date.now()

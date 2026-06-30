@@ -4,143 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MayaSec Command Center</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg: #0b0f19;
-            --surface: #111827;
-            --surface-hover: #1a2234;
-            --border: #1f2937;
-            --text: #e5e7eb;
-            --text-dim: #9ca3af;
-            --accent: #3b82f6;
-            --accent-glow: rgba(59,130,246,0.15);
-            --success: #10b981;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --purple: #8b5cf6;
-        }
-        * { margin:0; padding:0; box-sizing:border-box; }
-        body { background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; height:100vh; overflow:hidden; }
-
-        /* LOGIN PAGE */
-        .login-page { display:flex; align-items:center; justify-content:center; height:100vh; }
-        .login-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:3rem; width:420px; text-align:center; }
-        .login-card h1 { font-size:1.75rem; margin-bottom:0.5rem; }
-        .login-card p { color:var(--text-dim); font-size:0.9rem; margin-bottom:2rem; }
-        .auth-mode-switch { display:grid; grid-template-columns:1fr 1fr; gap:6px; padding:6px; background:rgba(0,0,0,0.24); border:1px solid var(--border); border-radius:12px; margin-bottom:1.5rem; }
-        .auth-mode-btn { border:none; background:transparent; color:var(--text-dim); padding:10px 12px; border-radius:8px; font-size:0.85rem; font-weight:600; cursor:pointer; transition:all 0.2s; }
-        .auth-mode-btn.active { background:var(--accent); color:#fff; box-shadow:0 8px 20px rgba(59,130,246,0.22); }
-        .auth-mode-btn:not(.active):hover { color:var(--text); background:rgba(255,255,255,0.04); }
-        .auth-input { width:100%; padding:12px 16px; background:rgba(0,0,0,0.3); border:1px solid var(--border); border-radius:10px; color:var(--text); font-size:0.95rem; outline:none; margin-bottom:12px; font-family:'Inter',sans-serif; }
-        .auth-input:focus { border-color:var(--accent); }
-        .auth-btn { width:100%; padding:14px; background:var(--accent); color:#fff; border:none; border-radius:10px; font-size:1rem; font-weight:600; cursor:pointer; transition:all 0.2s; margin-bottom:10px; }
-        .auth-btn:hover { opacity:0.9; transform:translateY(-1px); }
-        .auth-btn:disabled { opacity:0.6; cursor:not-allowed; transform:none; }
-        .auth-btn.secondary { background:transparent; border:1px solid var(--border); color:var(--text-dim); }
-        .auth-btn.secondary:hover { border-color:var(--accent); color:var(--accent); }
-        .auth-error { color:var(--danger); font-size:0.8rem; margin-bottom:12px; display:none; }
-        .auth-success { color:var(--success); font-size:0.8rem; margin-bottom:12px; display:none; }
-        .google-btn { display:flex; align-items:center; justify-content:center; gap:10px; width:100%; padding:13px; background:#fff; color:#333; border:none; border-radius:10px; font-size:0.95rem; font-weight:600; cursor:pointer; transition:all 0.2s; font-family:'Inter',sans-serif; }
-        .google-btn:hover { background:#f0f0f0; transform:translateY(-1px); box-shadow:0 4px 12px rgba(255,255,255,0.1); }
-        .google-btn img { width:20px; height:20px; }
-        .auth-divider { display:flex; align-items:center; gap:12px; margin:16px 0; color:var(--text-dim); font-size:0.8rem; }
-        .auth-divider::before,.auth-divider::after { content:''; flex:1; height:1px; background:var(--border); }
-        .auth-footnote { color:var(--text-dim); font-size:0.78rem; margin-top:0.5rem; }
-
-        /* ONBOARDING PAGE */
-        .onboard-page { display:flex; align-items:center; justify-content:center; height:100vh; }
-        .onboard-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:2.5rem; width:600px; }
-        .onboard-card h2 { font-size:1.4rem; margin-bottom:0.5rem; }
-        .onboard-card .subtitle { color:var(--text-dim); font-size:0.85rem; margin-bottom:2rem; }
-        .api-key-box { background:rgba(0,0,0,0.4); border:1px solid var(--border); border-radius:10px; padding:1rem; font-family:'JetBrains Mono',monospace; font-size:0.95rem; color:var(--accent); margin-bottom:1.5rem; display:flex; justify-content:space-between; align-items:center; }
-        .copy-btn { background:var(--accent); color:#fff; border:none; padding:8px 16px; border-radius:8px; cursor:pointer; font-size:0.8rem; font-weight:600; }
-        .copy-btn:hover { opacity:0.9; }
-        .snippet-box { background:rgba(0,0,0,0.4); border:1px solid var(--border); border-radius:10px; padding:1rem; font-family:'JetBrains Mono',monospace; font-size:0.75rem; color:#a78bfa; margin-bottom:1.5rem; white-space:pre; overflow-x:auto; line-height:1.6; }
-        .domain-section { margin-bottom:1.5rem; }
-        .domain-section label { font-size:0.8rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.05em; font-weight:600; display:block; margin-bottom:0.5rem; }
-        .domain-row { display:flex; gap:8px; }
-        .domain-input { flex:1; padding:10px 14px; background:rgba(0,0,0,0.3); border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:0.9rem; outline:none; }
-        .domain-input:focus { border-color:var(--accent); }
-        .add-btn { padding:10px 20px; background:var(--success); color:#fff; border:none; border-radius:8px; cursor:pointer; font-weight:600; }
-        .domain-list { margin-top:0.75rem; }
-        .domain-chip { display:inline-flex; align-items:center; gap:6px; background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.2); color:var(--success); padding:4px 12px; border-radius:999px; font-size:0.8rem; margin:4px 4px 0 0; }
-        .domain-chip .remove { cursor:pointer; opacity:0.7; }
-        .domain-chip .remove:hover { opacity:1; }
-        .go-btn { width:100%; padding:14px; background:var(--accent); color:#fff; border:none; border-radius:10px; font-size:1rem; font-weight:600; cursor:pointer; margin-top:0.5rem; }
-        .go-btn:hover { opacity:0.9; }
-
-        /* DASHBOARD LAYOUT */
-        .app { display:flex; height:100vh; }
-        .sidebar { width:280px; background:var(--surface); border-right:1px solid var(--border); display:flex; flex-direction:column; flex-shrink:0; }
-        .sidebar-header { padding:1.5rem; border-bottom:1px solid var(--border); }
-        .sidebar-header h1 { font-size:1.2rem; font-weight:700; }
-        .sidebar-header p { font-size:0.7rem; color:var(--text-dim); margin-top:4px; }
-        .site-list-title { padding:1rem 1.5rem 0.5rem; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-dim); font-weight:600; }
-        .site-list { flex:1; overflow-y:auto; padding:0.5rem; }
-        .site-item { display:flex; align-items:center; gap:12px; padding:12px 16px; border-radius:10px; cursor:pointer; transition:all 0.2s; margin-bottom:4px; }
-        .site-item:hover { background:var(--surface-hover); }
-        .site-item.active { background:var(--accent-glow); border:1px solid rgba(59,130,246,0.3); }
-        .site-dot { width:10px; height:10px; border-radius:50%; background:var(--success); box-shadow:0 0 6px var(--success); flex-shrink:0; }
-        .site-info { flex:1; min-width:0; }
-        .site-name { font-size:0.85rem; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-        .site-meta { font-size:0.7rem; color:var(--text-dim); margin-top:2px; }
-        .site-count { background:rgba(255,255,255,0.08); padding:2px 8px; border-radius:999px; font-size:0.7rem; color:var(--text-dim); font-weight:600; flex-shrink:0; }
-        .sidebar-footer { padding:1rem; border-top:1px solid var(--border); display:flex; align-items:center; gap:10px; }
-        .sidebar-footer img { width:32px; height:32px; border-radius:50%; }
-        .sidebar-footer .user-info { flex:1; min-width:0; }
-        .sidebar-footer .user-name { font-size:0.8rem; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-        .sidebar-footer .user-email { font-size:0.65rem; color:var(--text-dim); }
-        .logout-btn { background:none; border:1px solid var(--border); color:var(--text-dim); padding:4px 10px; border-radius:6px; cursor:pointer; font-size:0.7rem; }
-        .logout-btn:hover { border-color:var(--danger); color:var(--danger); }
-
-        .main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
-        .main header { background:var(--surface); border-bottom:1px solid var(--border); padding:1.25rem 2rem; display:flex; justify-content:space-between; align-items:center; flex-shrink:0; }
-        .header-left h2 { font-size:1.2rem; font-weight:600; }
-        .header-left p { font-size:0.8rem; color:var(--text-dim); margin-top:2px; }
-        .status { display:flex; align-items:center; gap:8px; font-size:0.8rem; color:var(--success); background:rgba(16,185,129,0.1); padding:6px 16px; border-radius:999px; border:1px solid rgba(16,185,129,0.2); }
-        .status-dot { width:8px; height:8px; background:var(--success); border-radius:50%; box-shadow:0 0 8px var(--success); animation:pulse 2s infinite; }
-        @keyframes pulse { 0%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.2)} 100%{opacity:1;transform:scale(1)} }
-        .content { flex:1; overflow-y:auto; padding:2rem; }
-        .kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:1.25rem; margin-bottom:2rem; }
-        .kpi-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1.25rem; }
-        .kpi-card h3 { font-size:0.75rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.05em; font-weight:600; }
-        .kpi-card .value { font-size:2rem; font-weight:700; margin-top:8px; }
-        .kpi-card .value.blue { color:var(--accent); }
-        .kpi-card .value.green { color:var(--success); }
-        .kpi-card .value.red { color:var(--danger); }
-        .kpi-card .value.purple { color:var(--purple); }
-        .table-container { background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
-        table { width:100%; border-collapse:collapse; text-align:left; }
-        th,td { padding:0.85rem 1.25rem; border-bottom:1px solid var(--border); }
-        th { background:rgba(255,255,255,0.02); font-weight:600; font-size:0.75rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.05em; }
-        tbody tr { transition:background 0.2s; }
-        tbody tr:hover { background:rgba(255,255,255,0.03); }
-        .badge { padding:4px 10px; border-radius:6px; font-size:0.7rem; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; display:inline-block; }
-        .badge.session_start { background:rgba(59,130,246,0.1); color:#60a5fa; border:1px solid rgba(59,130,246,0.2); }
-        .badge.behavior_batch { background:rgba(245,158,11,0.1); color:#fbbf24; border:1px solid rgba(245,158,11,0.2); }
-        .badge.login_attempt { background:rgba(16,185,129,0.1); color:#10b981; border:1px solid rgba(16,185,129,0.2); }
-        .badge.SECURITY_ALERT { background:rgba(239,68,68,0.2); color:#ef4444; border:1px solid #ef4444; box-shadow:0 0 10px rgba(239,68,68,0.5); animation:pulse-red 1s infinite; }
-        @keyframes pulse-red { 0%{box-shadow:0 0 5px #ef4444} 50%{box-shadow:0 0 20px #ef4444} 100%{box-shadow:0 0 5px #ef4444} }
-        .origin-tag { padding:3px 8px; border-radius:6px; font-size:0.7rem; background:rgba(139,92,246,0.1); color:#a78bfa; border:1px solid rgba(139,92,246,0.2); display:inline-block; max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-        .code-block { font-family:'JetBrains Mono',monospace; font-size:0.8rem; color:#a78bfa; background:rgba(0,0,0,0.3); padding:0.6rem; border-radius:6px; border:1px solid rgba(255,255,255,0.05); max-height:100px; overflow-y:auto; margin:0; white-space:pre-wrap; }
-        .new-row { animation:highlight 2.5s ease-out; }
-        @keyframes highlight { 0%{background:rgba(59,130,246,0.25)} 100%{background:transparent} }
-        .hidden { display:none !important; }
-
-        /* SETTINGS MODAL */
-        .modal-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); display:flex; align-items:center; justify-content:center; z-index:1000; backdrop-filter:blur(4px); }
-        .modal { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:2rem; width:560px; max-height:80vh; overflow-y:auto; animation:modalIn 0.2s ease-out; }
-        @keyframes modalIn { from{opacity:0;transform:scale(0.95)} to{opacity:1;transform:scale(1)} }
-        .modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; }
-        .modal-header h2 { font-size:1.2rem; }
-        .modal-close { background:none; border:none; color:var(--text-dim); font-size:1.5rem; cursor:pointer; padding:4px 8px; border-radius:6px; }
-        .modal-close:hover { background:var(--surface-hover); color:var(--text); }
-        .modal-section { margin-bottom:1.5rem; }
-        .modal-section h3 { font-size:0.8rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.05em; font-weight:600; margin-bottom:0.75rem; }
-        .settings-btn { background:none; border:1px solid var(--border); color:var(--text-dim); padding:6px 12px; border-radius:8px; cursor:pointer; font-size:0.75rem; font-weight:500; display:flex; align-items:center; gap:6px; transition:all 0.2s; }
-        .settings-btn:hover { border-color:var(--accent); color:var(--accent); }
-    </style>
+    <meta name="description" content="MayaSec Security Command Center - Real-time browser security monitoring dashboard">
+    <link rel="stylesheet" href="styles.css?v=2">
 </head>
 <body>
 
@@ -148,6 +13,7 @@
 <div id="view-login" class="login-page">
     <div class="login-card">
         <h1>MayaSec</h1>
+        <div class="login-version">Security Command Center</div>
         <div class="auth-mode-switch">
             <button class="auth-mode-btn active" id="mode-login-btn" type="button" onclick="setAuthMode('login')">Sign In</button>
             <button class="auth-mode-btn" id="mode-signup-btn" type="button" onclick="setAuthMode('signup')">Create Account</button>
@@ -173,15 +39,12 @@
     <div class="onboard-card">
         <h2>Welcome to MayaSec</h2>
         <p class="subtitle">Here is your API Key. Use it to connect any website to your dashboard.</p>
-
         <div class="api-key-box">
             <span id="onboard-apikey">Loading...</span>
             <button class="copy-btn" onclick="copyApiKey(this)">Copy</button>
         </div>
-
         <p style="font-size:0.8rem;color:var(--text-dim);margin-bottom:0.5rem;">Paste this into your website's &lt;head&gt; tag:</p>
         <div class="snippet-box" id="onboard-snippet">Loading...</div>
-
         <div class="domain-section">
             <label>Allowed Domains (for security)</label>
             <div class="domain-row">
@@ -190,551 +53,347 @@
             </div>
             <div class="domain-list" id="domain-list"></div>
         </div>
-
         <button class="go-btn" onclick="goToDashboard()">Open Command Center</button>
     </div>
 </div>
 
 <!-- ===== DASHBOARD VIEW ===== -->
 <div id="view-dashboard" class="app hidden">
+    <!-- Sidebar -->
     <div class="sidebar">
-        <div class="sidebar-header">
+        <div class="sidebar-brand">
             <h1>MayaSec</h1>
-            <p>Security Command Center</p>
+            <span>Command Center</span>
         </div>
-        <div class="site-list-title" style="display:flex;justify-content:space-between;align-items:center;padding-right:1.5rem">
-            Monitored Websites
-            <button class="settings-btn" onclick="openSettings()">+ Add Site</button>
-        </div>
-        <div class="site-list" id="site-list">
-            <div class="site-item active" data-site="all" onclick="selectSite('all')">
-                <div class="site-dot"></div>
-                <div class="site-info"><div class="site-name">All Websites</div><div class="site-meta">Aggregate view</div></div>
-                <span class="site-count" id="all-count">0</span>
+        <div class="sidebar-nav">
+            <div class="nav-item active" data-nav="dashboard" onclick="switchNav('dashboard')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+                Dashboard
+            </div>
+            <div class="nav-item" data-nav="history" onclick="switchNav('history')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                History
+            </div>
+            <div class="nav-item" data-nav="notes" onclick="switchNav('notes')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+                Notes
+            </div>
+            <div class="nav-item" data-nav="trace" onclick="switchNav('trace')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+                Trace Activity
+            </div>
+            <div class="nav-separator"></div>
+            <div class="nav-item" onclick="openSettings()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+                Settings
             </div>
         </div>
-        <div class="sidebar-footer">
-            <img id="user-avatar" src="" alt="">
-            <div class="user-info">
-                <div class="user-name" id="user-name">User</div>
-                <div class="user-email" id="user-email">email</div>
+        <div class="sidebar-bottom">
+            <div class="nav-item logout" onclick="logout()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                Logout
             </div>
-            <button class="logout-btn" onclick="logout()">Logout</button>
         </div>
     </div>
+
+    <!-- Main -->
     <div class="main">
-        <header>
-            <div class="header-left">
-                <h2 id="page-title">All Websites</h2>
-                <p id="page-subtitle">Monitoring all connected websites</p>
+        <div class="topbar">
+            <div class="topbar-left">
+                <h2 id="page-title">Dashboard</h2>
+                <p id="page-subtitle">Real-time security monitoring overview</p>
             </div>
-            <div class="status"><div class="status-dot"></div><span id="status-text">System Online</span></div>
-        </header>
-        <div class="content">
+            <div class="topbar-right">
+                <div class="analyst-session-controls" style="display:flex; align-items:center; gap:12px; margin-right:12px; border-right:1px solid var(--border); padding-right:16px;">
+                    <span id="active-analyst-session" style="font-size:0.75rem; color:var(--text-dim); display:none; display:flex; align-items:center; gap:6px;">
+                        <span class="dot-indicator dot-red" style="animation: pulse 1.5s infinite;"></span>
+                        <b id="analyst-session-name" style="color:var(--text);">Recording</b> 
+                        <span id="analyst-session-timer" class="mono">00:00</span>
+                    </span>
+                    <button class="action-btn" id="btn-start-session" onclick="openStartSessionModal()" style="font-size:0.75rem; padding:6px 12px;">Start Session</button>
+                    <button class="action-btn block hidden" id="btn-end-session" onclick="endAnalysisSession()" style="font-size:0.75rem; padding:6px 12px;">End Session</button>
+                </div>
+                
+                <div class="site-selector">
+                    <select id="site-select" onchange="selectSiteFromDropdown(this.value)">
+                        <option value="all">Choose website</option>
+                    </select>
+                </div>
+                <button class="topbar-bell" id="bell-btn" onclick="toggleNotifications()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+                    <span class="bell-badge" id="bell-badge" style="display: none;">0</span>
+                </button>
+                <div class="topbar-user">
+                    <img class="topbar-avatar" id="user-avatar" src="" alt="">
+                    <div class="topbar-user-info">
+                        <div class="name" id="user-name">User</div>
+                        <div class="role" id="user-role">Security Lead</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notification Dropdown -->
+        <div id="notification-dropdown" class="notification-dropdown hidden">
+            <div class="notif-header">
+                <h4>Recent Alerts</h4>
+                <button class="clear-notifs-btn" onclick="clearNotifications()">Clear</button>
+            </div>
+            <div class="notif-body" id="notif-body">
+                <!-- populated dynamically -->
+            </div>
+        </div>
+
+        <!-- Trace Bar (hidden by default) -->
+        <div class="trace-bar hidden" id="trace-bar">
+            <button class="trace-back-btn" onclick="exitTraceMode()">←</button>
+            <div class="trace-left">
+                <div class="trace-icon">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+                </div>
+                <span class="trace-title">Trace Mode</span>
+            </div>
+            <div class="trace-meta-group">
+                <div class="trace-meta-item">
+                    <span class="trace-meta-label">Session ID:</span>
+                    <span class="trace-meta-value" id="trace-session-id">—</span>
+                </div>
+                <div class="trace-meta-divider"></div>
+                <div class="trace-meta-item">
+                    <span class="trace-meta-label">IP:</span>
+                    <span class="trace-meta-value" id="trace-ip">—</span>
+                </div>
+                <div class="trace-meta-divider"></div>
+                <div class="trace-meta-item" style="flex-direction:row;align-items:center;gap:6px">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                    <span class="trace-meta-value" style="font-size:0.75rem;font-family:inherit;font-weight:400;" id="trace-location">—</span>
+                </div>
+            </div>
+            <div class="trace-risk-group">
+                <span class="trace-risk-label">RISK LEVEL</span>
+                <span class="badge-trace-high" id="trace-risk-badge">HIGH</span>
+            </div>
+        </div>
+
+        <!-- Dashboard Content -->
+        <div class="content" id="content-dashboard">
             <div class="kpi-grid">
-                <div class="kpi-card"><h3>Total Events</h3><p class="value blue" id="kpi-events">0</p></div>
-                <div class="kpi-card"><h3>Active Sessions</h3><p class="value green" id="kpi-sessions">0</p></div>
-                <div class="kpi-card"><h3>Security Alerts</h3><p class="value red" id="kpi-alerts">0</p></div>
-                <div class="kpi-card"><h3>Connected Sites</h3><p class="value purple" id="kpi-sites">0</p></div>
+                <div class="kpi-card"><div class="kpi-label">Active Users</div><div class="kpi-row"><span class="kpi-value blue" id="kpi-sessions">0</span><span class="kpi-delta up" id="kpi-sessions-delta"><!-- TODO: wire to backend --></span></div></div>
+                <div class="kpi-card"><div class="kpi-label">Today's Alerts</div><div class="kpi-row"><span class="kpi-value red" id="kpi-alerts">0</span><span class="kpi-delta" id="kpi-alerts-delta"><!-- TODO: wire to backend --></span></div></div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Mean Threat Score</div>
+                    <div class="gauge-container">
+                        <div class="gauge-mini" id="threat-gauge"></div>
+                        <div class="gauge-text"><strong id="threat-level">Low</strong><span id="threat-score-text">0/100</span></div>
+                    </div>
+                </div>
+                <div class="kpi-card"><div class="kpi-label">Blocked IPs</div><div class="kpi-row"><span class="kpi-value orange" id="kpi-blocked">0</span><span class="kpi-delta" id="kpi-blocked-delta"><!-- TODO: wire to backend --></span></div></div>
             </div>
-            <div class="table-container">
+            <div class="table-section">
+                <div class="table-header"><h3>Live Event Stream</h3><a class="view-all-link" onclick="switchNav('events')">View All →</a></div>
                 <table><thead><tr>
-                    <th style="width:10%">Time</th><th style="width:12%">Type</th><th style="width:15%">Origin</th><th style="width:15%">Session</th><th style="width:48%">Details</th>
+                    <th style="width:12%">Time</th>
+                    <th style="width:14%">
+                        <select id="filter-type" onchange="renderTable()" style="background:none; border:none; color:var(--text); font-size:0.75rem; font-weight:800; text-transform:uppercase; letter-spacing:0.05em; cursor:pointer; padding:0; outline:none; max-width:100%;">
+                            <option value="all">TYPE</option>
+                            <option value="SECURITY_ALERT">SECURITY ALERT</option>
+                            <option value="session_start">SESSION START</option>
+                            <option value="behavior_batch">BEHAVIOR</option>
+                        </select>
+                    </th>
+                    <th style="width:16%">Session ID</th>
+                    <th style="width:14%">Location</th>
+                    <th style="width:12%">
+                        <select id="filter-severity" onchange="renderTable()" style="background:none; border:none; color:var(--text); font-size:0.75rem; font-weight:800; text-transform:uppercase; letter-spacing:0.05em; cursor:pointer; padding:0; outline:none; max-width:100%;">
+                            <option value="all">SEVERITY</option>
+                            <option value="high">HIGH</option>
+                            <option value="medium">MEDIUM</option>
+                            <option value="low">LOW</option>
+                        </select>
+                    </th>
+                    <th>Summary</th><th style="width:5%"></th>
                 </tr></thead><tbody id="events-body"></tbody></table>
+            </div>
+        </div>
+
+        <!-- Trace Content (hidden) -->
+        <div class="content hidden" id="content-trace" style="padding:0; background:var(--bg);">
+            <div class="trace-search-bar" style="padding:16px 24px; background:var(--surface); border-bottom:1px solid var(--border); display:flex; gap:12px; align-items:center;">
+                <input type="text" id="trace-search-input" class="domain-input" placeholder="Search by Session ID, IP Address, Email, or Browser..." style="flex:1;">
+                <button class="action-btn" onclick="executeTraceSearch()">Search & Trace</button>
+            </div>
+            
+            <div id="trace-empty-state" style="padding:4rem; text-align:center; color:var(--text-dim); display:block;">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.5; margin-bottom:1rem;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <p>No user selected. Search above or click a session ID in the Event Stream.</p>
+            </div>
+
+            <div class="table-section" id="trace-table-container" style="border:none; border-radius:0; box-shadow:none; display:none;">
+                <table><thead><tr>
+                    <th style="width:12%">Time</th><th style="width:18%">Event</th><th style="width:30%">Details</th><th>Data</th><th style="width:5%"></th>
+                </tr></thead><tbody id="trace-body"></tbody></table>
+            </div>
+        </div>
+
+        <!-- Summary Content (hidden) -->
+        <div class="content hidden" id="content-summary">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:1rem;">
+                <h3>Investigation Result (Final Trace Summary)</h3>
+                <span class="complete-badge"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Investigation Complete</span>
+            </div>
+            <div class="summary-layout">
+                <div class="summary-card risk-gauge" id="summary-risk-card"></div>
+                <div class="summary-card" id="summary-timeline-card"><div class="table-header"><h3>Activity Timeline</h3></div><table><thead><tr><th style="width:30px"></th><th>Time</th><th>Event</th><th>Details</th><th>Status</th></tr></thead><tbody id="summary-timeline-body"></tbody></table></div>
+                <div class="summary-card" id="summary-info-card"></div>
+            </div>
+        </div>
+
+        <!-- Notes Content (hidden) -->
+        <div class="content hidden" id="content-notes">
+            <div class="table-section">
+                <div class="table-header"><h3>Saved Analyst Notes</h3></div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width:15%">Time</th>
+                            <th style="width:20%">Session ID</th>
+                            <th style="width:20%">Action / Flag</th>
+                            <th>Note</th>
+                            <th style="width:5%"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="notes-body">
+                        <tr><td colspan="5" style="text-align:center;padding:2rem;">No notes saved yet. Add a note during an investigation to see it here.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- History Content (hidden) -->
+        <div class="content hidden" id="content-history">
+            <div class="table-section">
+                <div class="table-header">
+                    <h3>Analysis History</h3>
+                    <div style="display:flex; gap:12px; align-items:center;">
+                        <select id="history-date-filter" onchange="applyHistoryFilter()" class="domain-input" style="padding:6px 12px; min-width:140px; border-color:var(--border-strong); font-size:0.8rem;">
+                            <option value="all">All Time</option>
+                            <option value="today">Today</option>
+                            <option value="yesterday">Yesterday</option>
+                            <option value="last_week">Last 7 Days</option>
+                            <option value="custom">Custom Date</option>
+                        </select>
+                        <input type="date" id="history-custom-date" onchange="applyHistoryFilter()" class="domain-input" style="padding:4px 12px; display:none; border-color:var(--border-strong); font-size:0.8rem;">
+                    </div>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width:25%">Session Name</th>
+                            <th style="width:15%">Duration</th>
+                            <th style="width:15%">Events Captured</th>
+                            <th style="width:15%">Alerts Caught</th>
+                            <th>Recorded On</th>
+                            <th style="width:5%"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-body">
+                        <tr><td colspan="6" style="text-align:center;padding:2rem;">No analysis sessions saved yet. Start a session from the top bar to record history.</td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
 </div>
 
-<!-- ===== SETTINGS MODAL ===== -->
+<!-- Start Session Modal -->
+<div id="start-session-modal" class="modal-overlay hidden" onclick="if(event.target===this)closeStartSessionModal()">
+    <div class="modal" style="width:400px; padding:1.5rem;">
+        <div class="modal-header" style="margin-bottom:1rem;">
+            <h2 style="font-size:1rem;">Start Analysis Session</h2>
+            <button class="modal-close" onclick="closeStartSessionModal()">×</button>
+        </div>
+        <div class="modal-section" style="margin-bottom:0;">
+            <p style="font-size:0.75rem; color:var(--text-dim); margin-bottom:1rem; line-height:1.4;">Start a new analysis window to bundle all captured alerts and live events into a single historical report.</p>
+            <input type="text" id="analyst-session-input" class="domain-input" placeholder="e.g. Friday Night Audit..." style="width:100%; margin-bottom:1rem;">
+            <button class="action-btn block" style="width:100%; justify-content:center; padding:10px; background:var(--primary);" onclick="startAnalysisSession()">Start Recording</button>
+        </div>
+    </div>
+</div>
+
+<!-- Row Action Menu Popup -->
+<div id="row-action-menu" class="dropdown-menu hidden" style="position:fixed; z-index:9999; box-shadow:0 10px 25px rgba(0,0,0,0.15); border-radius:8px; background:var(--surface); border:1px solid var(--border); overflow:hidden; min-width:180px;">
+    <div class="dropdown-item" id="row-action-investigate" style="padding:10px 16px; cursor:pointer; display:flex; align-items:center; font-size:0.85rem; border-bottom:1px solid var(--border);">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:8px;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>
+        Investigate & Add Note
+    </div>
+    <div class="dropdown-item" id="row-action-trace" style="padding:10px 16px; cursor:pointer; display:flex; align-items:center; font-size:0.85rem;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:8px;"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+        Trace User Session
+    </div>
+</div>
+
+<!-- Investigation Panel -->
+<div id="investigation-panel" class="investigation-overlay hidden">
+    <div class="inv-header">
+        <h3>Investigation Panel</h3>
+        <button class="inv-close" onclick="closeInvestigation()">×</button>
+    </div>
+    <div class="inv-body">
+        <div class="inv-section">
+            <div class="inv-section-title">Alert Details</div>
+            <div id="inv-alert-details"></div>
+        </div>
+        <div class="inv-section">
+            <div class="inv-section-title">Add a Note</div>
+            <textarea class="inv-textarea" id="inv-note" maxlength="500" placeholder="Describe your findings..." oninput="updateCharCount()"></textarea>
+            <div class="inv-char-count"><span id="inv-char-count">0</span>/500</div>
+        </div>
+        <div class="inv-section">
+            <div class="inv-section-title">Select a Flag</div>
+            <div class="flag-grid">
+                <button class="flag-btn" onclick="selectFlag(this,'Bot Pattern')">Bot Pattern</button>
+                <button class="flag-btn" onclick="selectFlag(this,'Malicious')">Malicious</button>
+                <button class="flag-btn" onclick="selectFlag(this,'Whitelist')">Whitelist</button>
+                <button class="flag-btn" onclick="selectFlag(this,'False Positive')">False Positive</button>
+            </div>
+        </div>
+        <div class="inv-section">
+            <div class="inv-section-title">Quick Actions</div>
+            <div class="action-grid">
+                <button class="action-btn challenge" onclick="doAction('challenge')">Challenge</button>
+                <button class="action-btn block" onclick="doAction('block')">Block</button>
+                <button class="action-btn escalate" onclick="doAction('escalate')">Escalate</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Settings Modal -->
 <div id="settings-modal" class="modal-overlay hidden" onclick="if(event.target===this)closeSettings()">
     <div class="modal">
         <div class="modal-header">
-            <h2>Add New Website / Settings</h2>
-            <button class="modal-close" onclick="closeSettings()">&times;</button>
+            <h2>Settings</h2>
+            <button class="modal-close" onclick="closeSettings()">×</button>
         </div>
-
         <div class="modal-section">
             <h3>Your API Key</h3>
-            <div class="api-key-box">
-                <span id="settings-apikey">-</span>
-                <button class="copy-btn" onclick="copyApiKey(this)">Copy</button>
-            </div>
+            <div class="api-key-box"><span id="settings-apikey">-</span><button class="copy-btn" onclick="copyApiKey(this)">Copy</button></div>
         </div>
-
         <div class="modal-section">
-            <h3>Step 1: Whitelist Your Website Domain</h3>
-            <p style="font-size:0.8rem;color:var(--text-dim);margin-bottom:0.5rem;">Enter the domain of the website you want to monitor. Events from other domains will be rejected.</p>
-            <div class="domain-row">
-                <input class="domain-input" id="settings-domain-input" placeholder="e.g. mysite.com">
-                <button class="add-btn" onclick="addDomainFromSettings()">Add Domain</button>
-            </div>
+            <h3>Whitelist Website Domain</h3>
+            <p style="font-size:0.8rem;color:var(--text-dim);margin-bottom:0.5rem;">Enter the domain of the website you want to monitor.</p>
+            <div class="domain-row"><input class="domain-input" id="settings-domain-input" placeholder="e.g. mysite.com"><button class="add-btn" onclick="addDomainFromSettings()">Add Domain</button></div>
             <div class="domain-list" id="settings-domain-list"></div>
         </div>
-
         <div class="modal-section">
-            <h3>Step 2: Paste Integration Snippet</h3>
-            <p style="font-size:0.8rem;color:var(--text-dim);margin-bottom:0.5rem;">Copy and paste this snippet into the <code>&lt;head&gt;</code> tag of your website.</p>
+            <h3>Integration Snippet</h3>
+            <p style="font-size:0.8rem;color:var(--text-dim);margin-bottom:0.5rem;">Paste into your website's <code>&lt;head&gt;</code> tag.</p>
             <div class="snippet-box" id="settings-snippet"></div>
         </div>
     </div>
 </div>
 
-<script>
-// ===== STATE =====
-let currentUser, userApiKey, userDomains = [];
-let allEvents = [], currentFilter = 'all', alertCount = 0;
-const uniqueSessions = new Set(), siteSessionMap = {}, siteAlertMap = {}, knownSites = new Map();
-
-// ===== INIT =====
-async function initApp() {
-    try {
-        const data = await apiFetch('/api/auth/me');
-        currentUser = data.user;
-        await registerUser();
-    } catch (error) {
-        if (!/Authentication required|Missing refresh token|Origin not allowed|Invalid login credentials/i.test(error.message)) {
-            showAuthError(error.message);
-        }
-        showView('login');
-    }
-}
-let authMode = 'login'; // 'login' or 'signup'
-
-function setAuthMode(mode) {
-    if (authMode === mode) return;
-    authMode = mode;
-    
-    document.getElementById('auth-error').style.display = 'none';
-    document.getElementById('auth-success').style.display = 'none';
-    document.getElementById('auth-email').value = '';
-    document.getElementById('auth-password').value = '';
-    document.getElementById('auth-password-confirm').value = '';
-    
-    const confirmInput = document.getElementById('auth-password-confirm');
-    const submitBtn = document.getElementById('auth-submit-btn');
-    const title = document.getElementById('auth-title');
-    
-    // Update Tabs
-    document.getElementById('mode-login-btn').classList.toggle('active', mode === 'login');
-    document.getElementById('mode-signup-btn').classList.toggle('active', mode === 'signup');
-    
-    if (mode === 'signup') {
-        confirmInput.classList.remove('hidden');
-        submitBtn.textContent = 'Create Account';
-        title.textContent = 'Create an account to start monitoring';
-    } else {
-        confirmInput.classList.add('hidden');
-        submitBtn.textContent = 'Sign In';
-        title.textContent = 'Sign in to access your Security Command Center';
-    }
-}
-
-async function submitAuth() {
-    if (authMode === 'login') {
-        await handleLogin();
-    } else {
-        await handleSignup();
-    }
-}
-
-function loginWithGoogle() {
-    window.location.href = '/api/auth/google';
-}
-
-async function handleLogin() {
-    const email = document.getElementById('auth-email').value.trim();
-    const password = document.getElementById('auth-password').value;
-    if (!email || !password) return showAuthError('Please enter email and password');
-
-    setAuthBusy(true);
-    try {
-        const data = await apiFetch('/api/auth/login', {
-            method: 'POST',
-            body: JSON.stringify({ email, password })
-        });
-        currentUser = data.user;
-        await registerUser();
-    } catch (error) {
-        showAuthError(error.message);
-    } finally {
-        setAuthBusy(false);
-    }
-}
-
-async function handleSignup() {
-    const email = document.getElementById('auth-email').value.trim();
-    const password = document.getElementById('auth-password').value;
-    const confirm = document.getElementById('auth-password-confirm').value;
-    
-    if (!email || !password) return showAuthError('Please enter email and password');
-    if (password !== confirm) return showAuthError('Passwords do not match');
-    if (password.length < 6) return showAuthError('Password must be at least 6 characters');
-
-    setAuthBusy(true);
-    try {
-        const data = await apiFetch('/api/auth/signup', {
-            method: 'POST',
-            body: JSON.stringify({ email, password })
-        });
-
-        if (!data.hasSession) {
-            setAuthMode('login'); // Switch back to login FIRST
-            showAuthSuccess(data.message || 'Account created! Check your email to confirm, then sign in.');
-            return;
-        }
-
-        currentUser = data.user;
-        await registerUser();
-    } catch (error) {
-        showAuthError(error.message);
-    } finally {
-        setAuthBusy(false);
-    }
-}
-
-function showAuthError(msg) {
-    const el = document.getElementById('auth-error');
-    el.textContent = msg; el.style.display = 'block';
-    document.getElementById('auth-success').style.display = 'none';
-}
-function showAuthSuccess(msg) {
-    const el = document.getElementById('auth-success');
-    el.textContent = msg; el.style.display = 'block';
-    document.getElementById('auth-error').style.display = 'none';
-}
-
-async function logout() {
-    try {
-        await apiFetch('/api/auth/logout', { method: 'POST' });
-    } catch {
-        // The UI should still return to logged-out state if remote logout fails.
-    }
-    currentUser = null;
-    userApiKey = null;
-    userDomains = [];
-    resetRealtimeState();
-    showView('login');
-}
-
-async function registerUser() {
-    const data = await apiFetch('/api/auth/register', { method: 'POST' });
-    userApiKey = data.apiKey;
-    userDomains = data.allowedDomains || [];
-
-    // Check if user has domains set up - if not, show onboarding
-    if (userDomains.length === 0) {
-        showOnboarding();
-    } else {
-        goToDashboard();
-    }
-}
-
-async function apiFetch(url, options = {}) {
-    const headers = {
-        ...(options.body ? { 'Content-Type': 'application/json' } : {}),
-        ...(options.headers || {})
-    };
-    const response = await fetch(url, {
-        ...options,
-        headers,
-        credentials: 'same-origin'
-    });
-    const text = await response.text();
-    let data = {};
-    try {
-        data = text ? JSON.parse(text) : {};
-    } catch {
-        data = { error: text || `Request failed with status ${response.status}` };
-    }
-    if (!response.ok) {
-        throw new Error(data.error || data.message || `Request failed with status ${response.status}`);
-    }
-    return data;
-}
-
-function setAuthBusy(isBusy) {
-    const submitBtn = document.getElementById('auth-submit-btn');
-    const loginTab = document.getElementById('mode-login-btn');
-    const signupTab = document.getElementById('mode-signup-btn');
-    
-    if (submitBtn) submitBtn.disabled = isBusy;
-    if (loginTab) loginTab.disabled = isBusy;
-    if (signupTab) signupTab.disabled = isBusy;
-    
-    if (submitBtn) {
-        if (isBusy) {
-            submitBtn.dataset.originalText = submitBtn.textContent;
-            submitBtn.textContent = 'Please wait...';
-        } else {
-            submitBtn.textContent = submitBtn.dataset.originalText || (authMode === 'login' ? 'Sign In' : 'Create Account');
-        }
-    }
-}
-
-function escapeHtml(value) {
-    return String(value ?? '').replace(/[&<>"']/g, char => ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#39;'
-    }[char]));
-}
-
-// ===== VIEWS =====
-function showView(name) {
-    document.getElementById('view-login').classList.toggle('hidden', name !== 'login');
-    document.getElementById('view-onboard').classList.toggle('hidden', name !== 'onboard');
-    document.getElementById('view-dashboard').classList.toggle('hidden', name !== 'dashboard');
-}
-
-function showOnboarding() {
-    showView('onboard');
-    document.getElementById('onboard-apikey').textContent = userApiKey;
-    document.getElementById('onboard-snippet').textContent = buildSnippet();
-    renderDomainList();
-}
-
-function buildSnippet() {
-    const baseUrl = window.location.origin;
-    return `<script type="module" src="${baseUrl}/sdk/index.js"><\/script>
-<script type="module">
-    import { MayaSec } from '${baseUrl}/sdk/index.js';
-    MayaSec.init({ apiKey: '${userApiKey}' });
-    MayaSec.start();
-<\/script>`;
-}
-
-function copyApiKey(trigger) {
-    navigator.clipboard.writeText(userApiKey);
-    const btn = trigger || document.querySelector('.copy-btn');
-    if (!btn) return;
-    const previousText = btn.textContent;
-    btn.textContent = 'Copied!';
-    setTimeout(() => { btn.textContent = previousText; }, 1500);
-}
-
-async function addDomain() {
-    const input = document.getElementById('domain-input');
-    const domain = input.value.trim();
-    if (!domain) return;
-
-    try {
-        const data = await apiFetch('/api/auth/domains', {
-            method: 'POST',
-            body: JSON.stringify({ domain })
-        });
-        userDomains = data.allowedDomains || [];
-        input.value = '';
-        renderDomainList();
-    } catch (error) {
-        showAuthError(error.message);
-    }
-}
-
-async function removeDomain(domain) {
-    try {
-        const data = await apiFetch('/api/auth/domains', {
-            method: 'DELETE',
-            body: JSON.stringify({ domain })
-        });
-        userDomains = data.allowedDomains || [];
-        renderDomainList();
-    } catch (error) {
-        showAuthError(error.message);
-    }
-}
-
-function renderDomainList() {
-    renderDomainListInto(document.getElementById('domain-list'));
-    renderDomainListInto(document.getElementById('settings-domain-list'));
-}
-
-function renderDomainListInto(container) {
-    if (!container) return;
-    container.innerHTML = '';
-    userDomains.forEach(domain => {
-        const chip = document.createElement('span');
-        chip.className = 'domain-chip';
-        chip.textContent = `${domain} `;
-
-        const remove = document.createElement('span');
-        remove.className = 'remove';
-        remove.textContent = 'x';
-        remove.onclick = () => removeDomain(domain);
-
-        chip.appendChild(remove);
-        container.appendChild(chip);
-    });
-}
-
-function openSettings() {
-    document.getElementById('settings-apikey').textContent = userApiKey || '-';
-    document.getElementById('settings-snippet').textContent = buildSnippet();
-    document.getElementById('settings-domain-input').value = '';
-    renderDomainList();
-    document.getElementById('settings-modal').classList.remove('hidden');
-}
-
-function closeSettings() {
-    document.getElementById('settings-modal').classList.add('hidden');
-}
-
-async function addDomainFromSettings() {
-    const input = document.getElementById('settings-domain-input');
-    const domain = input.value.trim();
-    if (!domain) return;
-
-    try {
-        const data = await apiFetch('/api/auth/domains', {
-            method: 'POST',
-            body: JSON.stringify({ domain })
-        });
-        userDomains = data.allowedDomains || [];
-        input.value = '';
-        renderDomainList();
-    } catch (error) {
-        showAuthError(error.message);
-        closeSettings();
-    }
-}
-
-document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') {
-        closeSettings();
-    }
-
-    if (event.key === 'Enter' && document.activeElement?.id === 'settings-domain-input') {
-        addDomainFromSettings();
-    }
-});
-
-// ===== DASHBOARD =====
-function goToDashboard() {
-    showView('dashboard');
-    resetRealtimeState();
-    document.getElementById('user-name').textContent = currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'User';
-    document.getElementById('user-email').textContent = currentUser.email;
-    document.getElementById('user-avatar').src = currentUser.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.email)}&background=3b82f6&color=fff&size=64`;
-    document.getElementById('settings-apikey').textContent = userApiKey || '-';
-    document.getElementById('settings-snippet').textContent = buildSnippet();
-    connectSSE();
-}
-
-function resetRealtimeState() {
-    allEvents = [];
-    currentFilter = 'all';
-    alertCount = 0;
-    uniqueSessions.clear();
-    knownSites.clear();
-    Object.keys(siteSessionMap).forEach(key => delete siteSessionMap[key]);
-    Object.keys(siteAlertMap).forEach(key => delete siteAlertMap[key]);
-    document.getElementById('events-body').innerHTML = '';
-    document.querySelectorAll('.site-item:not([data-site="all"])').forEach(el => el.remove());
-    document.querySelector('.site-item[data-site="all"]')?.classList.add('active');
-    updateKPIs();
-}
-
-let evtSource;
-function connectSSE() {
-    if (evtSource) evtSource.close();
-    evtSource = new EventSource(`/api/events/stream?apiKey=${userApiKey}`);
-    evtSource.onmessage = function(event) {
-        const msg = JSON.parse(event.data);
-        if (msg.type === 'history') { msg.data.reverse().forEach(p => addEvent(p, false)); renderTable(); }
-        else if (msg.type === 'new_event') { addEvent(msg.data, true); }
-        else if (msg.type === 'sites_update') { updateSiteList(msg.data); }
-    };
-    evtSource.onerror = () => { document.getElementById('status-text').textContent = 'Disconnected'; };
-    evtSource.onopen = () => { document.getElementById('status-text').textContent = 'System Online'; };
-}
-
-function selectSite(name) {
-    currentFilter = name;
-    document.querySelectorAll('.site-item').forEach(el => el.classList.remove('active'));
-    document.querySelector(`.site-item[data-site="${CSS.escape(name)}"]`)?.classList.add('active');
-    document.getElementById('page-title').textContent = name === 'all' ? 'All Websites' : name;
-    document.getElementById('page-subtitle').textContent = name === 'all' ? 'Monitoring all connected websites' : `Monitoring ${name}`;
-    renderTable(); updateKPIs();
-}
-
-function renderTable() {
-    const tbody = document.getElementById('events-body');
-    tbody.innerHTML = '';
-    const filtered = currentFilter === 'all' ? allEvents : allEvents.filter(p => p.origin === currentFilter);
-    filtered.slice(0, 50).forEach(p => tbody.appendChild(makeRow(p, false)));
-}
-
-function makeRow(p, animate) {
-    const tr = document.createElement('tr');
-    if (animate) tr.className = 'new-row';
-    const time = p.timestamp ? new Date(p.timestamp).toLocaleTimeString() : '--';
-    const origin = p.origin || 'Unknown';
-    let details = '';
-    if (p.type === 'session_start') details = `Browser: ${p.data?.browser?.name||'N/A'} | OS: ${p.data?.device?.platform||'N/A'}`;
-    else if (p.type === 'behavior_batch') details = `${p.events?.length||0} user actions recorded`;
-    else if (p.type === 'SECURITY_ALERT') details = `${p.data?.details||p.data?.reason||'Alert'}`;
-    else if (p.type === 'login_attempt') details = 'User attempted login';
-    else details = JSON.stringify(p).substring(0, 80);
-    const raw = JSON.stringify(p.data||p.events||p, null, 2);
-    const eventType = String(p.type || 'unknown');
-    const badgeClass = eventType.replace(/[^\w-]/g, '_');
-    tr.innerHTML = `<td style="color:var(--text-dim);font-size:0.85rem">${time}</td>
-        <td><span class="badge ${badgeClass}">${escapeHtml(eventType.replace('_',' '))}</span></td>
-        <td><span class="origin-tag" title="${escapeHtml(origin)}">${escapeHtml(origin)}</span></td>
-        <td style="font-family:'JetBrains Mono',monospace;font-size:0.8rem;color:var(--text-dim)">${escapeHtml(p.sessionId||'--')}</td>
-        <td><div style="margin-bottom:6px;font-weight:500;font-size:0.85rem">${escapeHtml(details)}</div><pre class="code-block">${escapeHtml(raw)}</pre></td>`;
-    return tr;
-}
-
-function addEvent(p, animate) {
-    allEvents.unshift(p);
-    if (allEvents.length > 200) allEvents.pop();
-    if (p.sessionId) { uniqueSessions.add(p.sessionId); const s=p.origin||'Unknown'; if(!siteSessionMap[s])siteSessionMap[s]=new Set(); siteSessionMap[s].add(p.sessionId); }
-    if (p.type === 'SECURITY_ALERT') { alertCount++; const s=p.origin||'Unknown'; siteAlertMap[s]=(siteAlertMap[s]||0)+1; }
-    if (currentFilter === 'all' || p.origin === currentFilter) {
-        const tbody = document.getElementById('events-body');
-        tbody.insertBefore(makeRow(p, animate), tbody.firstChild);
-        if (tbody.children.length > 50) tbody.removeChild(tbody.lastChild);
-    }
-    updateKPIs();
-}
-
-function updateKPIs() {
-    if (currentFilter === 'all') {
-        document.getElementById('kpi-events').textContent = allEvents.length;
-        document.getElementById('kpi-sessions').textContent = uniqueSessions.size;
-        document.getElementById('kpi-alerts').textContent = alertCount;
-    } else {
-        document.getElementById('kpi-events').textContent = allEvents.filter(p=>p.origin===currentFilter).length;
-        document.getElementById('kpi-sessions').textContent = (siteSessionMap[currentFilter]?.size||0);
-        document.getElementById('kpi-alerts').textContent = (siteAlertMap[currentFilter]||0);
-    }
-    document.getElementById('kpi-sites').textContent = knownSites.size;
-    document.getElementById('all-count').textContent = allEvents.length;
-}
-
-function updateSiteList(sites) {
-    const list = document.getElementById('site-list');
-    sites.forEach(site => {
-        knownSites.set(site.name, site);
-        let el = document.querySelector(`.site-item[data-site="${CSS.escape(site.name)}"]`);
-        if (!el) {
-            el = document.createElement('div');
-            el.className = 'site-item';
-            el.setAttribute('data-site', site.name);
-            el.onclick = () => selectSite(site.name);
-            el.innerHTML = `<div class="site-dot"></div><div class="site-info"><div class="site-name">${escapeHtml(site.name)}</div><div class="site-meta">Connected</div></div><span class="site-count">${escapeHtml(site.eventCount)}</span>`;
-            list.appendChild(el);
-        } else {
-            el.querySelector('.site-count').textContent = site.eventCount;
-        }
-    });
-    updateKPIs();
-}
-
-initApp();
-</script>
+<script src="app-core.js"></script>
+<script src="app-ui.js"></script>
 </body>
 </html>
