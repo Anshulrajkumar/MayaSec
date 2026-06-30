@@ -4,10 +4,13 @@
   "description": "Standalone JavaScript SDK scaffold for browser-side security monitoring.",
   "type": "module",
   "main": "sdk/index.js",
+  "files": [
+    "sdk"
+  ],
   "scripts": {
+    "test": "echo \"No tests specified yet\" && exit 0",
     "dev": "node --watch backend/server.js",
-    "start": "node backend/server.js",
-    "test": "echo \"No tests specified yet\" && exit 0"
+    "start": "node backend/server.js"
   },
   "keywords": [
     "security",
