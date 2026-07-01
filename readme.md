@@ -1,6 +1,6 @@
 <div align="center">
   <img src="logo.png" alt="MayaSec Logo" width="120" style="border-radius: 20px; margin-bottom: 20px;" />
-  <h1>MayaSec - Browser-Side Security Monitoring SDK</h1>
+  <h1>MayaSec - Browser Side Security Monitoring SDK</h1>
 </div>
 
 **MayaSec** is a lightweight, zero-config JavaScript SDK that adds an invisible security layer to any website. It silently monitors user behavior, fingerprints devices, detects bots, and blocks attacks like SQL Injection — all from the browser, without touching your backend code.
