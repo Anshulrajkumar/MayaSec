@@ -164,19 +164,7 @@ body {
   align-items: center;
   gap: 8px;
 }
-/* LED indicator dot */
-.sidebar-brand h1::after {
-  content: '';
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  background: var(--success);
-  box-shadow: 0 0 6px 2px rgba(34,197,94,0.6);
-  animation: ledPulse 2s ease-in-out infinite;
-}
-@keyframes ledPulse {
-  0%, 100% { opacity: 1; box-shadow: 0 0 6px 2px rgba(34,197,94,0.6); }
-  50% { opacity: 0.6; box-shadow: 0 0 3px 1px rgba(34,197,94,0.3); }
-}
+/* Removed LED indicator dot as requested */
 .sidebar-brand span { 
   font-family: var(--font-mono);
   font-size: 0.7rem; 
