@@ -8,6 +8,11 @@
 Drop one script tag into your HTML. That's it. Your website is now protected and monitored in real-time through the **MayaSec Command Center**.
 
 
+##Achievement
+<div align="center">
+  <img src="https://github.com/user-attachments/assets/c0ce48d9-73d6-44f2-8ca9-00e40ec9a6b2" alt="MayaSec Logo" width="120" style="border-radius: 20px; margin-bottom: 20px;" />
+  <h1>MayaSec - Won the medal or best startup at MeitY Techathon 2.0 @IIM calcutta </h1>
+</div>
 
 ---
 
@@ -205,7 +210,6 @@ MayaSec currently implements the following detection rules:
 - **Location:** `backend/server.js`
 
 ---
-
 
 ## License
 
