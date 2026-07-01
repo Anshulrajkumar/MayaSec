@@ -164,7 +164,7 @@ body {
   align-items: center;
   gap: 8px;
 }
-/* Removed LED indicator dot as requested */
+
 .sidebar-brand span { 
   font-family: var(--font-mono);
   font-size: 0.7rem; 
