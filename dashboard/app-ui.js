@@ -95,6 +95,30 @@ function summaryFor(p) {
     return String(p.type||'').replace(/_/g,' ');
 }
 
+function getSummaryHtml(p) {
+    if (p.type === 'BEHAVIOUR_SUMMARY' && p.data) {
+        return `
+            <ul style="margin:0; padding-left:16px; font-size:0.75rem; color:var(--text); line-height:1.4;">
+                <li><strong>Mouse Distance:</strong> ${p.data.mouseDistance || 0} px</li>
+                <li><strong>Avg Speed:</strong> ${p.data.averageVelocity || 0} px/s</li>
+                <li><strong>Clicks:</strong> ${p.data.clickCount || 0}</li>
+                <li><strong>Scrolls:</strong> ${p.data.scrollCount || 0}</li>
+                <li><strong>Behaviour Score:</strong> ${p.data.behaviourScore || 100}</li>
+            </ul>
+        `;
+    } else if (p.type === 'SESSION_STATISTICS' && p.data) {
+        return `
+            <ul style="margin:0; padding-left:16px; font-size:0.75rem; color:var(--text); line-height:1.4;">
+                <li><strong>Active Time:</strong> ${Math.round(p.data.activeTime || 0)}s</li>
+                <li><strong>Idle Time:</strong> ${Math.round(p.data.idleTime || 0)}s</li>
+                <li><strong>API Requests:</strong> ${p.data.apiRequests || 0}</li>
+                <li><strong>Focus Changes:</strong> ${p.data.focusChanges || 0}</li>
+            </ul>
+        `;
+    }
+    return escapeHtml(summaryFor(p));
+}
+
 function makeRow(p, animate) {
     if (p.type === 'session_start' || p.type === 'session_end' || p.type === 'analyst_session_start' || p.type === 'analyst_session_end') {
         const tr = document.createElement('tr');
@@ -133,30 +157,7 @@ function makeRow(p, animate) {
     const typeName = String(p.type||'unknown').replace(/_/g,' ');
     const location = p.location || 'Unknown';
     const sessionId = p.sessionId || '--';
-    
-    let summaryHtml = '';
-    if (p.type === 'BEHAVIOUR_SUMMARY' && p.data) {
-        summaryHtml = `
-            <ul style="margin:0; padding-left:16px; font-size:0.75rem; color:var(--text); line-height:1.4;">
-                <li><strong>Mouse Distance:</strong> ${p.data.mouseDistance || 0} px</li>
-                <li><strong>Avg Speed:</strong> ${p.data.averageVelocity || 0} px/s</li>
-                <li><strong>Clicks:</strong> ${p.data.clickCount || 0}</li>
-                <li><strong>Scrolls:</strong> ${p.data.scrollCount || 0}</li>
-                <li><strong>Behaviour Score:</strong> ${p.data.behaviourScore || 100}</li>
-            </ul>
-        `;
-    } else if (p.type === 'SESSION_STATISTICS' && p.data) {
-        summaryHtml = `
-            <ul style="margin:0; padding-left:16px; font-size:0.75rem; color:var(--text); line-height:1.4;">
-                <li><strong>Active Time:</strong> ${Math.round(p.data.activeTime || 0)}s</li>
-                <li><strong>Idle Time:</strong> ${Math.round(p.data.idleTime || 0)}s</li>
-                <li><strong>API Requests:</strong> ${p.data.apiRequests || 0}</li>
-                <li><strong>Focus Changes:</strong> ${p.data.focusChanges || 0}</li>
-            </ul>
-        `;
-    } else {
-        summaryHtml = escapeHtml(summaryFor(p));
-    }
+    const summaryHtml = getSummaryHtml(p);
 
     tr.innerHTML = `<td class="mono">${time}</td>
         <td><span class="badge badge-info">${escapeHtml(typeName)}</span></td>
@@ -463,11 +464,11 @@ function renderTraceTimeline() {
             btnContainer.appendChild(btn);
             
             tbody.appendChild(tr);
-        } else if (['CLICK_ACTIVITY', 'MOUSE_ACTIVITY', 'SCROLL_ACTIVITY', 'KEYBOARD_ACTIVITY', 'API_REQUEST', 'API_RESPONSE', 'API_ERROR', 'DEVTOOLS_OPENED', 'DOM_MUTATION', 'SCRIPT_INJECTION', 'SQL_INJECTION', 'LOGIN_ATTEMPT', 'LOGIN_SUCCESS', 'LOGIN_FAILED'].includes(p.type)) {
+        } else if (['CLICK_ACTIVITY', 'MOUSE_ACTIVITY', 'SCROLL_ACTIVITY', 'KEYBOARD_ACTIVITY', 'API_REQUEST', 'API_RESPONSE', 'API_ERROR', 'DEVTOOLS_OPENED', 'DOM_MUTATION', 'SCRIPT_INJECTION', 'SQL_INJECTION', 'LOGIN_ATTEMPT', 'LOGIN_SUCCESS', 'LOGIN_FAILED', 'BEHAVIOUR_SUMMARY', 'SESSION_STATISTICS'].includes(p.type)) {
             const tr = document.createElement('tr');
             const time = p.timestamp ? new Date(p.timestamp).toLocaleTimeString() : '--';
             const label = String(p.type || 'Event').replace(/_/g, ' ');
-            tr.innerHTML = `<td class="mono">${time}</td><td><span class="event-label"><span class="event-icon">•</span> ${escapeHtml(label)}</span></td><td>${escapeHtml(summaryFor(p))}</td><td class="mono" style="font-size:0.75rem">${escapeHtml(JSON.stringify(p.data || {}))}</td><td></td>`;
+            tr.innerHTML = `<td class="mono">${time}</td><td><span class="event-label"><span class="event-icon">•</span> ${escapeHtml(label)}</span></td><td>${getSummaryHtml(p)}</td><td class="mono" style="font-size:0.75rem">${escapeHtml(JSON.stringify(p.data || {}))}</td><td></td>`;
             tbody.appendChild(tr);
         } else if (p.type === 'session_start' || p.type === 'session_end') {
             const tr = document.createElement('tr');
@@ -515,7 +516,7 @@ function openInvestigation(alertData) {
         html += `<div class="inv-detail-row"><span class="label">Browser</span><span>${escapeHtml(alertData.data?.fingerprint?.browser?.name||alertData.data?.browser?.name||'N/A')}</span></div>
                  <div class="inv-detail-row"><span class="label">OS</span><span>${escapeHtml(alertData.data?.fingerprint?.device?.platform||alertData.data?.device?.platform||'N/A')}</span></div>`;
     } else {
-        html += `<div class="inv-detail-row"><span class="label">Summary</span><span>${escapeHtml(summaryFor(alertData))}</span></div>`;
+        html += `<div class="inv-detail-row"><span class="label">Summary</span><span>${getSummaryHtml(alertData)}</span></div>`;
     }
     
     html += `<div class="inv-detail-row"><span class="label">Session ID</span><span class="mono">${escapeHtml(alertData.sessionId||'--')}</span></div>`;
@@ -644,7 +645,7 @@ function showFinalSummary(action, note) {
         const time = p.timestamp ? new Date(p.timestamp).toLocaleTimeString() : '--';
         const typeName = p.type === 'SECURITY_ALERT' ? 'Security Alert' : p.type === 'behavior_batch' ? 'Behavior' : p.type === 'session_start' ? 'Session Start' : String(p.type || 'event').replace(/_/g, ' ');
         const statusIcon = p.type === 'SECURITY_ALERT' ? `<span class="badge badge-high">HIGH</span> ${selectedFlag ? `<span class="badge badge-info">${escapeHtml(selectedFlag)}</span>` : ''}` : '<span class="status-check">✓</span>';
-        tr.innerHTML = `<td class="timeline-dot-col"><span class="dot-indicator ${p.type==='SECURITY_ALERT'?'dot-red':'dot-blue'}"></span></td><td class="mono">${time}</td><td>${escapeHtml(typeName)}</td><td style="font-size:0.75rem">${escapeHtml(summaryFor(p))}</td><td>${statusIcon}</td>`;
+        tr.innerHTML = `<td class="timeline-dot-col"><span class="dot-indicator ${p.type==='SECURITY_ALERT'?'dot-red':'dot-blue'}"></span></td><td class="mono">${time}</td><td>${escapeHtml(typeName)}</td><td style="font-size:0.75rem">${getSummaryHtml(p)}</td><td>${statusIcon}</td>`;
         stbody.appendChild(tr);
     });
 
@@ -1103,7 +1104,7 @@ function renderUserDetail(user) {
             <td><span class="badge badge-info">${escapeHtml(typeName)}</span></td>
             <td class="mono clickable trace-link" onclick="enterTraceMode('${escapeHtml(p.sessionId || '')}'); event.stopPropagation();">${escapeHtml(p.sessionId || '--')}</td>
             <td><span class="badge ${sevClass}">${sev}</span></td>
-            <td style="font-size:0.8rem">${escapeHtml(summaryFor(p))}</td>
+            <td style="font-size:0.8rem">${getSummaryHtml(p)}</td>
         `;
         tbody.appendChild(tr);
     });
