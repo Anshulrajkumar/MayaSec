@@ -39,21 +39,6 @@ export function ingestOptions(req, res) {
   res.status(204).end();
 }
 
-const ipBlacklist = new Map();
-
-export function checkStatus(req, res) {
-  setIngestCors(req, res);
-  const clientIp = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket?.remoteAddress || 'Unknown';
-  if (ipBlacklist.has(clientIp)) {
-    const expiry = ipBlacklist.get(clientIp);
-    if (Date.now() < expiry) {
-      return res.status(403).json({ action: 'TIMEOUT', duration: expiry - Date.now() });
-    } else {
-      ipBlacklist.delete(clientIp);
-    }
-  }
-  res.status(200).json({ ok: true });
-}
 
 export async function ingestEvents(req, res) {
   setIngestCors(req, res);
@@ -61,15 +46,6 @@ export async function ingestEvents(req, res) {
   const clientIp = (req.headers['x-forwarded-for'] || '').split(',')[0].trim()
     || req.socket?.remoteAddress
     || 'Unknown';
-
-  if (ipBlacklist.has(clientIp)) {
-    const expiry = ipBlacklist.get(clientIp);
-    if (Date.now() < expiry) {
-      return res.status(403).json({ action: 'TIMEOUT', duration: expiry - Date.now() });
-    } else {
-      ipBlacklist.delete(clientIp);
-    }
-  }
 
   const payload = req.body;
   if (!payload || typeof payload !== 'object') {
@@ -113,19 +89,6 @@ export async function ingestEvents(req, res) {
     processed: result.normalizedEvents.length,
     derived: result.derivedEvents.length
   };
-
-  if (result.isCritical) {
-    let duration = 300000; // 5 minutes default
-    
-    const hasRapidClicking = result.derivedEvents.some(e => e.metadata?.ruleId === 'rapid-clicking');
-    if (hasRapidClicking) {
-      duration = 120000; // 2 minutes
-    }
-
-    ipBlacklist.set(clientIp, Date.now() + duration);
-    responsePayload.action = 'TIMEOUT';
-    responsePayload.duration = duration;
-  }
 
   res.status(200).json(responsePayload);
 }

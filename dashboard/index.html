@@ -197,32 +197,11 @@
                         <div class="gauge-text"><strong id="threat-level">Low</strong><span id="threat-score-text">0/100</span></div>
                     </div>
                 </div>
-                <div class="kpi-card"><div class="kpi-label">Blocked IPs</div><div class="kpi-row"><span class="kpi-value orange" id="kpi-blocked">0</span><span class="kpi-delta" id="kpi-blocked-delta"><!-- TODO: wire to backend --></span></div></div>
+                <div class="kpi-card"><div class="kpi-label">Connected IPs</div><div class="kpi-row"><span class="kpi-value orange" id="kpi-blocked">0</span><span class="kpi-delta" id="kpi-blocked-delta"></span></div></div>
             </div>
-            <div class="table-section">
-                <div class="table-header"><h3>Live Event Stream</h3><a class="view-all-link" onclick="switchNav('events')">View All →</a></div>
-                <table><thead><tr>
-                    <th style="width:12%">Time</th>
-                    <th style="width:14%">
-                        <select id="filter-type" onchange="renderTable()" style="background:none; border:none; color:var(--text); font-size:0.75rem; font-weight:800; text-transform:uppercase; letter-spacing:0.05em; cursor:pointer; padding:0; outline:none; max-width:100%;">
-                            <option value="all">TYPE</option>
-                            <option value="SECURITY_ALERT">SECURITY ALERT</option>
-                            <option value="session_start">SESSION START</option>
-                            <option value="behavior_batch">BEHAVIOR</option>
-                        </select>
-                    </th>
-                    <th style="width:16%">Session ID</th>
-                    <th style="width:14%">Location</th>
-                    <th style="width:12%">
-                        <select id="filter-severity" onchange="renderTable()" style="background:none; border:none; color:var(--text); font-size:0.75rem; font-weight:800; text-transform:uppercase; letter-spacing:0.05em; cursor:pointer; padding:0; outline:none; max-width:100%;">
-                            <option value="all">SEVERITY</option>
-                            <option value="high">HIGH</option>
-                            <option value="medium">MEDIUM</option>
-                            <option value="low">LOW</option>
-                        </select>
-                    </th>
-                    <th>Summary</th><th style="width:5%"></th>
-                </tr></thead><tbody id="events-body"></tbody></table>
+            <div class="dashboard-ip-section">
+                <div class="table-header"><h3>Connected IPs</h3></div>
+                <div class="users-grid" id="dashboard-ip-grid"></div>
             </div>
         </div>
 

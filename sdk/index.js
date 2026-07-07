@@ -9,7 +9,7 @@ import { browserMonitor } from './monitor.js';
 import { riskEngine } from './risk.js';
 import { rulesEngine } from './rules.js';
 import { sessionManager } from './session.js';
-import { transportService } from './transport.js';
+import { initTelemetryPipeline, stopTelemetryPipeline } from './telemetry/index.js';
 import { currentHostname } from './utils.js';
 
 class MayaSecSDK {
@@ -85,7 +85,7 @@ class MayaSecSDK {
       riskEngine.applyEvent(event);
     });
 
-    transportService.start();
+    initTelemetryPipeline();
     behaviourTracker.start();
     authMonitor.start();
     apiMonitor.start();
@@ -103,7 +103,7 @@ class MayaSecSDK {
     authMonitor.stop();
     apiMonitor.stop();
     browserMonitor.stop();
-    transportService.stop();
+    stopTelemetryPipeline();
 
     if (this.rulesSubscriptionId) unsubscribe(this.rulesSubscriptionId);
     if (this.riskSubscriptionId) unsubscribe(this.riskSubscriptionId);

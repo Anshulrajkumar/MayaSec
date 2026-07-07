@@ -15,7 +15,12 @@ const defaultConfig = {
   rapidClickThreshold: 8,
   sessionIdleTimeoutMs: 30 * 60 * 1000,
   sessionStorageKey: 'mayasec:session',
-  sessionActivityKey: 'mayasec:last-activity'
+  sessionActivityKey: 'mayasec:last-activity',
+  aggregationInterval: 5000,
+  maxBufferSize: 1000,
+  enableSessionReplay: true,
+  lowPriorityRetention: 5000,
+  batchSize: 100
 };
 
 let currentConfig = { ...defaultConfig };

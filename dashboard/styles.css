@@ -867,3 +867,12 @@ tr.alert-row .event-icon { color: var(--danger); }
 
 /* ===== SELECTION HIGHLIGHT ===== */
 ::selection { background: rgba(255, 71, 87, 0.2); color: var(--text); }
+
+/* ===== DASHBOARD IP SECTION ===== */
+.dashboard-ip-section {
+  background: var(--surface);
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: var(--shadow-card);
+}
+.dashboard-ip-section .table-header { margin-bottom: 1.25rem; }

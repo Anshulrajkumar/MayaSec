@@ -48,6 +48,11 @@ export class ApiMonitor {
       const url = typeof input === 'string' ? input : input?.url;
       const method = init.method || (typeof input === 'object' && 'method' in input ? input.method : 'GET');
 
+      // Skip SDK's own telemetry calls to avoid feedback loop
+      if (url && url.includes('/api/ingest')) {
+        return this.originalFetch(input, init);
+      }
+
       emitEvent({
         sessionId,
         category: 'api',
@@ -92,8 +97,14 @@ export class ApiMonitor {
     };
 
     XMLHttpRequest.prototype.send = function mayaSecSend(body) {
-      const sessionId = sessionManager.getSession()?.id || '';
       const meta = this.__mayaSecMeta || { method: 'GET', url: 'unknown' };
+
+      // Skip SDK's own telemetry calls to avoid feedback loop
+      if (meta.url && String(meta.url).includes('/api/ingest')) {
+        return monitor.originalXHRSend.call(this, body);
+      }
+
+      const sessionId = sessionManager.getSession()?.id || '';
 
       emitEvent({
         sessionId,

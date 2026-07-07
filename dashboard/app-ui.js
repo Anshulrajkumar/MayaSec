@@ -134,13 +134,38 @@ function makeRow(p, animate) {
     const location = p.location || 'Unknown';
     const sessionId = p.sessionId || '--';
     
+    let summaryHtml = '';
+    if (p.type === 'BEHAVIOUR_SUMMARY' && p.data) {
+        summaryHtml = `
+            <ul style="margin:0; padding-left:16px; font-size:0.75rem; color:var(--text); line-height:1.4;">
+                <li><strong>Mouse Distance:</strong> ${p.data.mouseDistance || 0} px</li>
+                <li><strong>Avg Speed:</strong> ${p.data.averageVelocity || 0} px/s</li>
+                <li><strong>Clicks:</strong> ${p.data.clickCount || 0}</li>
+                <li><strong>Scrolls:</strong> ${p.data.scrollCount || 0}</li>
+                <li><strong>Behaviour Score:</strong> ${p.data.behaviourScore || 100}</li>
+            </ul>
+        `;
+    } else if (p.type === 'SESSION_STATISTICS' && p.data) {
+        summaryHtml = `
+            <ul style="margin:0; padding-left:16px; font-size:0.75rem; color:var(--text); line-height:1.4;">
+                <li><strong>Active Time:</strong> ${Math.round(p.data.activeTime || 0)}s</li>
+                <li><strong>Idle Time:</strong> ${Math.round(p.data.idleTime || 0)}s</li>
+                <li><strong>API Requests:</strong> ${p.data.apiRequests || 0}</li>
+                <li><strong>Focus Changes:</strong> ${p.data.focusChanges || 0}</li>
+            </ul>
+        `;
+    } else {
+        summaryHtml = escapeHtml(summaryFor(p));
+    }
+
     tr.innerHTML = `<td class="mono">${time}</td>
         <td><span class="badge badge-info">${escapeHtml(typeName)}</span></td>
         <td class="mono ${sessionId !== '--' ? 'clickable trace-link' : ''}" ${sessionId !== '--' ? `onclick="enterTraceMode('${escapeHtml(sessionId)}'); event.stopPropagation();"` : ''}>${escapeHtml(sessionId)}</td>
         <td style="font-size:0.75rem;color:var(--text-dim)">${escapeHtml(location)}</td>
         <td><span class="badge ${sevClass}">${sev}</span></td>
-        <td style="font-size:0.8rem">${escapeHtml(summaryFor(p))}</td>
+        <td style="font-size:0.8rem">${summaryHtml}</td>
         <td style="text-align:right; padding-right:1rem;"></td>`;
+
         
     const btnContainer = tr.lastElementChild;
     const btn = document.createElement('button');
@@ -157,22 +182,7 @@ function makeRow(p, animate) {
 }
 
 function renderTable() {
-    const tbody = document.getElementById('events-body');
-    if (!tbody) return;
-    tbody.innerHTML = '';
-    
-    const typeFilter = document.getElementById('filter-type')?.value || 'all';
-    const sevFilter = document.getElementById('filter-severity')?.value || 'all';
-    
-    const filtered = allEvents.filter(p => {
-        if (p.type === 'analyst_session_start' || p.type === 'analyst_session_end') return true;
-        if (currentFilter !== 'all' && p.origin !== currentFilter) return false;
-        if (typeFilter !== 'all' && p.type !== typeFilter) return false;
-        if (sevFilter !== 'all' && severityFor(p) !== sevFilter) return false;
-        return true;
-    });
-    
-    filtered.slice(0, 50).forEach(p => tbody.appendChild(makeRow(p, false)));
+    renderDashboardIpGrid();
 }
 
 function addEvent(p, animate) {
@@ -199,22 +209,8 @@ function addEvent(p, animate) {
         if (p.type === 'SECURITY_ALERT') currentAnalystSession.alertsCount++;
     }
 
-    const typeFilter = document.getElementById('filter-type')?.value || 'all';
-    const sevFilter = document.getElementById('filter-severity')?.value || 'all';
-
-    const isAnalystMarker = p.type === 'analyst_session_start' || p.type === 'analyst_session_end';
-    const matchesSite = currentFilter === 'all' || p.origin === currentFilter || isAnalystMarker;
-    const matchesType = typeFilter === 'all' || p.type === typeFilter || isAnalystMarker;
-    const matchesSev = sevFilter === 'all' || severityFor(p) === sevFilter || isAnalystMarker;
-
-    if (matchesSite && matchesType && matchesSev) {
-        const tbody = document.getElementById('events-body');
-        if (tbody) {
-            tbody.insertBefore(makeRow(p, animate), tbody.firstChild);
-            if (tbody.children.length > 50) tbody.removeChild(tbody.lastChild);
-        }
-    }
     updateKPIs();
+    renderDashboardIpGrid();
     if (currentView === 'trace' && traceSessionId && p.sessionId === traceSessionId) renderTraceTimeline();
     if (currentView === 'users') renderUsersView();
 }
@@ -230,9 +226,8 @@ function updateKPIs() {
     const badge = document.getElementById('bell-badge');
     badge.textContent = unreadAlerts.length;
     badge.style.display = unreadAlerts.length > 0 ? 'flex' : 'none';
-    
-    // TODO: wire blocked IPs to backend
-    document.getElementById('kpi-blocked').textContent = 0;
+    const ipMap = getIpUserMap();
+    document.getElementById('kpi-blocked').textContent = ipMap.size;
     updateThreatGauge();
 }
 
@@ -243,8 +238,9 @@ function updateThreatGauge() {
     const el = document.getElementById('threat-gauge');
     const color = score === 0 ? 'var(--text-dim)' : score <= 40 ? '#10b981' : score <= 70 ? '#f59e0b' : '#ef4444';
     const level = score === 0 ? 'None' : score <= 40 ? 'Low' : score <= 70 ? 'Medium' : 'High';
-    const pct = (score / 100) * 251;
-    el.innerHTML = `<svg width="48" height="48"><circle cx="24" cy="24" r="20" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="4"/><circle cx="24" cy="24" r="20" fill="none" stroke="${color}" stroke-width="4" stroke-dasharray="${pct} 251" stroke-linecap="round"/></svg><div class="gauge-label" style="color:${color}">${score}</div>`;
+    const circ = 125.66; // 2 * PI * 20
+    const pct = (score / 100) * circ;
+    el.innerHTML = `<svg width="48" height="48"><circle cx="24" cy="24" r="20" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="4"/><circle cx="24" cy="24" r="20" fill="none" stroke="${color}" stroke-width="4" stroke-dasharray="${pct} ${circ}" stroke-linecap="round"/></svg><div class="gauge-label" style="color:${color}">${score}</div>`;
     document.getElementById('threat-level').textContent = level;
     document.getElementById('threat-level').style.color = color;
     document.getElementById('threat-score-text').textContent = `${score}/100`;
@@ -254,6 +250,74 @@ function updateSiteList(sites) {
     sites.forEach(site => { knownSites.set(site.name, site); });
     updateSiteDropdown();
     updateKPIs();
+}
+
+// ===== DASHBOARD IP GRID =====
+function renderDashboardIpGrid() {
+    const grid = document.getElementById('dashboard-ip-grid');
+    if (!grid) return;
+
+    const ipMap = getIpUserMap();
+    const users = Array.from(ipMap.values()).sort((a, b) => {
+        if (b.alerts !== a.alerts) return b.alerts - a.alerts;
+        return b.events.length - a.events.length;
+    });
+
+    grid.innerHTML = '';
+
+    if (users.length === 0) {
+        grid.innerHTML = `<div class="users-empty">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.4; margin-bottom:1rem;"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+            <p>No user activity detected yet.<br>Interact with a monitored site to see connected IPs here.</p>
+        </div>`;
+        return;
+    }
+
+    users.forEach(user => {
+        const card = document.createElement('div');
+        card.className = `user-card ${user.alerts > 0 ? 'user-card-flagged' : ''}`;
+        card.onclick = () => {
+            selectedUserIp = user.ip;
+            switchNav('users');
+        };
+
+        const sevBadge = user.maxSeverity === 'high' ? 'badge-high' : user.maxSeverity === 'medium' ? 'badge-medium' : 'badge-low';
+        const riskLevel = user.maxSeverity.toUpperCase();
+        const lastSeenStr = user.lastSeen ? new Date(user.lastSeen).toLocaleTimeString() : '--';
+        const originList = Array.from(user.origins).join(', ');
+
+        card.innerHTML = `
+            <div class="user-card-top">
+                <div class="user-card-icon ${user.alerts > 0 ? 'user-card-icon-danger' : ''}">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </div>
+                <div class="user-card-ip-group">
+                    <div class="user-card-ip">${escapeHtml(user.ip)}</div>
+                    <div class="user-card-origin">${escapeHtml(originList)}</div>
+                </div>
+                <span class="badge ${sevBadge}" style="margin-left:auto;">${riskLevel}</span>
+            </div>
+            <div class="user-card-stats">
+                <div class="user-card-stat">
+                    <span class="user-card-stat-val">${user.sessions.size}</span>
+                    <span class="user-card-stat-lbl">Sessions</span>
+                </div>
+                <div class="user-card-stat">
+                    <span class="user-card-stat-val">${user.events.length}</span>
+                    <span class="user-card-stat-lbl">Events</span>
+                </div>
+                <div class="user-card-stat">
+                    <span class="user-card-stat-val ${user.alerts > 0 ? 'red' : ''}">${user.alerts}</span>
+                    <span class="user-card-stat-lbl">Alerts</span>
+                </div>
+                <div class="user-card-stat">
+                    <span class="user-card-stat-val">${lastSeenStr}</span>
+                    <span class="user-card-stat-lbl">Last Seen</span>
+                </div>
+            </div>
+        `;
+        grid.appendChild(card);
+    });
 }
 
 // ===== TRACE MODE =====

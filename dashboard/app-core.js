@@ -198,8 +198,8 @@ function resetRealtimeState() {
     uniqueSessions.clear(); knownSites.clear();
     Object.keys(siteSessionMap).forEach(k=>delete siteSessionMap[k]);
     Object.keys(siteAlertMap).forEach(k=>delete siteAlertMap[k]);
-    document.getElementById('events-body').innerHTML='';
     updateKPIs();
+    renderDashboardIpGrid();
 }
 
 function connectSSE() {
