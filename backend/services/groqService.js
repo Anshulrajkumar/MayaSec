@@ -78,7 +78,9 @@ async function callGroq(messages, retries = GROQ_KEYS.length) {
  */
 function compactEvents(events) {
   return events.slice(0, 60).map(e => {
-    const time = e.timestamp ? new Date(e.timestamp).toLocaleTimeString() : '?';
+    const time = e.timestamp 
+      ? new Date(e.timestamp).toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata' }) 
+      : '?';
     const meta = e.metadata || e.data || {};
 
     // Strip sensitive/noisy fields
